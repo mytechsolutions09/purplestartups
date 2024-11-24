@@ -107,3 +107,34 @@ export async function generateStartupPlanWithAI(idea: string): Promise<StartupPl
     throw new Error(error instanceof Error ? error.message : 'Failed to generate startup plan');
   }
 }
+
+export async function getTrendingKeywords(): Promise<string[]> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo-1106",
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a startup trend analyst. Generate trending startup keywords. Always respond with valid JSON.'
+        },
+        {
+          role: 'user',
+          content: `Generate 10 trending startup keywords or concepts for 2024. 
+            Respond with JSON in the format: {"keywords": ["keyword1", "keyword2", ...]}`
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+    });
+
+    if (!response.choices?.[0]?.message?.content) {
+      throw new Error('Invalid API response format');
+    }
+
+    const content = JSON.parse(response.choices[0].message.content);
+    return content.keywords || [];
+  } catch (error) {
+    console.error('API Error:', error);
+    throw new Error(error instanceof Error ? error.message : 'Failed to fetch trending keywords');
+  }
+}

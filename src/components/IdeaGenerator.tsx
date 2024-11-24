@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lightbulb, Loader } from 'lucide-react';
+import { getTrendingKeywords } from '../utils/api';
 
 interface IdeaGeneratorProps {
   vagueConcept: string;
@@ -9,14 +10,32 @@ interface IdeaGeneratorProps {
 }
 
 function IdeaGenerator({ vagueConcept, setVagueConcept, onGenerate, isLoading }: IdeaGeneratorProps) {
+  const [trendingKeywords, setTrendingKeywords] = useState<string[]>([]);
+  const [isLoadingKeywords, setIsLoadingKeywords] = useState(true);
+
+  useEffect(() => {
+    const loadTrendingKeywords = async () => {
+      try {
+        const keywords = await getTrendingKeywords();
+        setTrendingKeywords(keywords);
+      } catch (error) {
+        console.error('Failed to load trending keywords:', error);
+      } finally {
+        setIsLoadingKeywords(false);
+      }
+    };
+
+    loadTrendingKeywords();
+  }, []);
+
   return (
     <div className="text-center space-y-8 max-w-3xl mx-auto">
-      <div className="space-y-4">
-        <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl">
+      <div className="space-y-3">
+        <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
           Transform Your Vague Idea Into a
           <span className="text-indigo-600"> Viable Startup</span>
         </h1>
-        <p className="text-xl text-gray-600">
+        <p className="text-lg text-gray-600">
           Enter your concept and let AI generate actionable startup ideas with detailed roadmaps
         </p>
       </div>
@@ -43,6 +62,27 @@ function IdeaGenerator({ vagueConcept, setVagueConcept, onGenerate, isLoading }:
           <span>{isLoading ? 'Generating...' : 'Generate Ideas'}</span>
         </button>
       </div>
+
+      {!isLoadingKeywords && trendingKeywords.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-gray-600">Trending Keywords</p>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {trendingKeywords.map((keyword, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setVagueConcept(keyword);
+                  onGenerate(keyword);
+                }}
+                disabled={isLoading}
+                className="px-3 py-1.5 bg-white text-indigo-600 rounded-full text-sm font-medium border border-indigo-200 hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {keyword}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
