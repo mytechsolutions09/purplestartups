@@ -1,0 +1,28 @@
+[build]
+  # Base directory where your package.json is located
+  base = "/"
+  
+  # Build command
+  command = "npm run build"
+  
+  # Directory with the built files that will be deployed
+  publish = "dist"
+
+# Environment variables
+[build.environment]
+  NODE_VERSION = "18"
+
+# Redirects for SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers for security and caching
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
