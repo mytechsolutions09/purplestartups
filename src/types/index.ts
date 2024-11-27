@@ -39,3 +39,113 @@ export interface SavedPlan {
   timestamp: number;
   plan: StartupPlan;
 }
+
+export interface Risk {
+  risk: string;
+  impact: 'High' | 'Medium' | 'Low';
+  mitigation: string;
+}
+
+export interface RiskAssessment {
+  marketRisks: Risk[];
+  financialRisks: Risk[];
+  operationalRisks: Risk[];
+  overallRiskScore: number;
+}
+
+export interface Competitor {
+  name: string;
+  strengths: string[];
+  weaknesses: string[];
+  marketShare: string;
+  uniqueSellingPoints: string[];
+}
+
+export interface Milestone {
+  title: string;
+  description: string;
+  deadline: string;
+  status: 'pending' | 'completed' | 'at-risk';
+  dependencies: string[];
+}
+
+export interface ResearchProject {
+  id: string;
+  title: string;
+  description: string;
+  status: 'planning' | 'in-progress' | 'completed' | 'on-hold';
+  priority: 'high' | 'medium' | 'low';
+  timeline: string;
+  budget: string;
+  objectives: string[];
+  keyFindings: string[];
+  technicalChallenges: string[];
+  resources: string[];
+}
+
+export interface TechnologyTrend {
+  name: string;
+  description: string;
+  maturityLevel: 'emerging' | 'growing' | 'mature';
+  relevanceScore: number;
+  potentialImpact: string;
+  implementationComplexity: 'high' | 'medium' | 'low';
+  estimatedCost: string;
+}
+
+export interface BusinessModelCanvas {
+  keyPartners: {
+    partners: string[];
+    strategicAlliances: string[];
+    supplierRelationships: string[];
+  };
+  keyActivities: {
+    activities: string[];
+    processes: string[];
+    operations: string[];
+  };
+  keyResources: {
+    physical: string[];
+    intellectual: string[];
+    human: string[];
+    financial: string[];
+  };
+  valuePropositions: {
+    products: string[];
+    services: string[];
+    benefits: string[];
+    uniqueFeatures: string[];
+  };
+  customerRelationships: {
+    types: string[];
+    strategies: string[];
+    automationLevel: string;
+  };
+  channels: {
+    marketing: string[];
+    sales: string[];
+    distribution: string[];
+  };
+  customerSegments: {
+    segments: string[];
+    characteristics: string[];
+    needs: string[];
+  };
+  costStructure: {
+    fixedCosts: string[];
+    variableCosts: string[];
+    economies: string[];
+  };
+  revenueStreams: {
+    sources: string[];
+    pricing: string[];
+    strategies: string[];
+  };
+}
+
+export interface MarketMetrics {
+  marketSize: string;
+  growthRate: string;
+  competitorCount: number;
+  customerAcquisitionCost: string;
+}

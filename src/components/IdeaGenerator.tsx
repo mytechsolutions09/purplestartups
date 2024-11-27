@@ -10,9 +10,11 @@ interface IdeaGeneratorProps {
 }
 
 function IdeaGenerator({ vagueConcept, setVagueConcept, onGenerate, isLoading }: IdeaGeneratorProps) {
+  // State for trending keywords suggestions
   const [trendingKeywords, setTrendingKeywords] = useState<string[]>([]);
   const [isLoadingKeywords, setIsLoadingKeywords] = useState(true);
 
+  // Load trending keywords on component mount
   useEffect(() => {
     const loadTrendingKeywords = async () => {
       try {
@@ -28,6 +30,13 @@ function IdeaGenerator({ vagueConcept, setVagueConcept, onGenerate, isLoading }:
     loadTrendingKeywords();
   }, []);
 
+  // Handle Enter key press for idea generation
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && vagueConcept.trim() && !isLoading) {
+      onGenerate(vagueConcept);
+    }
+  };
+
   return (
     <div className="text-center space-y-8 max-w-3xl mx-auto">
       <div className="space-y-3">
@@ -36,7 +45,7 @@ function IdeaGenerator({ vagueConcept, setVagueConcept, onGenerate, isLoading }:
           <span className="text-indigo-600"> Viable Startup</span>
         </h1>
         <p className="text-lg text-gray-600">
-          Enter your concept and let AI generate actionable startup ideas with detailed roadmaps
+          Enter your concept and let us generate actionable startup ideas with detailed roadmaps
         </p>
       </div>
 
@@ -45,6 +54,7 @@ function IdeaGenerator({ vagueConcept, setVagueConcept, onGenerate, isLoading }:
           type="text"
           value={vagueConcept}
           onChange={(e) => setVagueConcept(e.target.value)}
+          onKeyDown={handleKeyPress}
           placeholder="Enter your concept (e.g., 'sustainable fashion')"
           className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           disabled={isLoading}
