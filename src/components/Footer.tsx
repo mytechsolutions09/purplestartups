@@ -53,7 +53,7 @@ export default function Footer() {
         {/* Social Links & Copyright - Updated spacing */}
         <div className="mt-8 pt-6 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
           <div className="flex space-x-4">
-            <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500">
+          <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500">
               <Github className="h-5 w-5" />
             </a>
             <a href="https://twitter.com/yourusername" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500">
@@ -62,10 +62,7 @@ export default function Footer() {
             <a href="https://linkedin.com/in/yourusername" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500">
               <Linkedin className="h-5 w-5" />
             </a>
-            <a href="mailto:contact@yourcompany.com" className="text-gray-400 hover:text-gray-500">
-              <Mail className="h-5 w-5" />
-            </a>
-          </div>
+         </div>
           
           <p className="text-sm text-gray-400">
             © {currentYear} Startup Guru. All rights reserved.

@@ -18,7 +18,6 @@ import StorePage from './pages/StorePage';
 import { StorePageProvider } from './contexts/StorePageContext';
 import Footer from './components/Footer';
 import AppsPage from './pages/AppsPage';
-import TrendPredictorPage from './pages/TrendPredictorPage';
 import FeaturesPage from './pages/FeaturesPage';
 import HelpPage from './pages/HelpPage';
 import FAQPage from './pages/FAQPage';
@@ -111,7 +110,6 @@ function App() {
             <Route path="/marketing" element={<MarketingPage />} />
             <Route path="/store" element={<StorePage />} />
             <Route path="/apps" element={<AppsPage />} />
-            <Route path="/apps/trend-predictor" element={<TrendPredictorPage />} />
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/help" element={<HelpPage />} />
             <Route path="/faq" element={<FAQPage />} />
