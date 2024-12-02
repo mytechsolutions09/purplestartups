@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { useSavedPlans } from '../contexts/SavedPlansContext';
-import { useStorePage } from '../contexts/StorePageContext';
 import { useNavigate } from 'react-router-dom';
 import type { StartupPlan } from '../types';
 
@@ -12,22 +11,7 @@ interface NavbarProps {
 function Navbar({ onSelectPlan }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { savedPlans, removePlan } = useSavedPlans();
-  const { setStoredPlan } = useStorePage();
   const navigate = useNavigate();
-
-  const handleSaveProgress = () => {
-    const currentPlan = savedPlans[savedPlans.length - 1];
-    
-    if (currentPlan) {
-      setStoredPlan({
-        idea: currentPlan.idea,
-        timestamp: currentPlan.timestamp,
-        path: `/roadmap?idea=${encodeURIComponent(currentPlan.idea)}`
-      });
-    }
-    
-    navigate('/store');
-  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white shadow-sm z-40">
@@ -51,14 +35,6 @@ function Navbar({ onSelectPlan }: NavbarProps) {
             >
               <Icons.Grid className="h-5 w-5" />
               <span>Apps</span>
-            </button>
-            
-            <button
-              onClick={handleSaveProgress}
-              className="p-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm"
-              aria-label="Save Progress"
-            >
-              <Icons.Save className="h-5 w-5" />
             </button>
           </div>
         </div>

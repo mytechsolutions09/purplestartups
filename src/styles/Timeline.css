@@ -1,0 +1,15 @@
+/* Remove the default dots/bullets */
+.timeline-step::before {
+  display: none; /* This will hide the dots */
+}
+
+/* If you want to keep a line connecting the steps */
+.timeline-connector {
+  height: 2px;
+  background-color: #E5E7EB; /* Light gray color, adjust as needed */
+  width: 100%;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 0;
+} 

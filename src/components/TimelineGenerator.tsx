@@ -30,6 +30,22 @@ function TimelineGenerator({ milestones }: TimelineProps) {
       </h2>
 
       <div className="relative">
+        <div className="flex justify-between items-center">
+          <div className="flex-1">
+            <div className="text-gray-800 font-medium">Launch & Awareness</div>
+            <div className="text-gray-500 text-sm">3 months</div>
+          </div>
+          <div className="flex-1 text-center">
+            <div className="text-gray-800 font-medium">Lead Generation & Conversion</div>
+            <div className="text-gray-500 text-sm">6 months</div>
+          </div>
+          <div className="flex-1 text-right">
+            <div className="text-gray-800 font-medium">Expansion & Retention</div>
+            <div className="text-gray-500 text-sm">Ongoing</div>
+          </div>
+        </div>
+        <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-gray-300 -translate-y-1/2" />
+
         {milestones.map((milestone, index) => (
           <div key={index} className="mb-8 relative pl-8">
             <div className="absolute left-0 top-0 h-full w-px bg-gray-200" />

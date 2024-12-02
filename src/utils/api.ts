@@ -119,12 +119,12 @@ export async function getTrendingKeywords(): Promise<string[]> {
         },
         {
           role: 'user',
-          content: `Generate top 30 new trending startup keywords for 2024. 
+          content: `Generate top 20 new trending startup keywords for 2024. 
             Respond with JSON in the format: {"keywords": ["keyword1", "keyword2", ...]}`
         }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.5,
+      temperature: 0.7,
     });
 
     if (!response.choices?.[0]?.message?.content) {
@@ -434,3 +434,150 @@ export async function getTechnicalDebt(idea: string): Promise<TechnicalDebtMetri
 
   return response.json();
 }
+
+export interface TrendingKeyword {
+  keyword: string;
+  score: number;
+  category: string;
+  relatedEvents: string[];
+  predictedGrowth: number;
+  confidence: number;
+  timeframe: string;
+  marketImpact: 'Low' | 'Medium' | 'High';
+  industryFocus: string[];
+  geographicRelevance: string[];
+}
+
+export async function getPredictedTrendingKeywords(): Promise<TrendingKeyword[]> {
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo-1106",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert business trend analyst. Return only valid JSON without any additional text or explanation."
+        },
+        {
+          role: "user",
+          content: `Generate 6 trending business keywords based on current world events and market conditions.
+          Return the data in this exact JSON structure:
+          {
+            "keywords": [
+              {
+                "keyword": "string",
+                "score": number,
+                "category": "string",
+                "relatedEvents": ["string"],
+                "predictedGrowth": number,
+                "confidence": number,
+                "timeframe": "string",
+                "marketImpact": "High|Medium|Low",
+                "industryFocus": ["string"],
+                "geographicRelevance": ["string"]
+              }
+            ]
+          }
+          
+          Ensure each trend is:
+          - Data-driven and specific
+          - Actionable for businesses
+          - Based on verifiable current events
+          - Relevant to modern market conditions`
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000,
+      top_p: 0.9,
+    });
+
+    const responseText = completion.choices[0].message.content || '';
+    
+    try {
+      // Parse the response directly
+      const response = JSON.parse(responseText);
+      
+      // Validate and transform the response
+      if (response?.keywords && Array.isArray(response.keywords)) {
+        return response.keywords.map((k: any) => ({
+          keyword: String(k.keyword || ''),
+          score: Number(k.score || 0),
+          category: String(k.category || ''),
+          relatedEvents: Array.isArray(k.relatedEvents) ? k.relatedEvents.map(String) : [],
+          predictedGrowth: Number(k.predictedGrowth || 0),
+          confidence: Number(k.confidence || 0),
+          timeframe: String(k.timeframe || ''),
+          marketImpact: k.marketImpact || 'Medium',
+          industryFocus: Array.isArray(k.industryFocus) ? k.industryFocus.map(String) : [],
+          geographicRelevance: Array.isArray(k.geographicRelevance) ? k.geographicRelevance.map(String) : []
+        }));
+      }
+
+      console.error('Invalid response structure:', response);
+      return [];
+    } catch (parseError) {
+      console.error('Error parsing OpenAI response:', parseError, 'Raw response:', responseText);
+      return [];
+    }
+  } catch (error) {
+    console.error('Error fetching trending keywords:', error);
+    throw new Error('Failed to generate trending keywords');
+  }
+}
+
+export const generateWebsitePrompt = async (idea: string): Promise<string> => {
+  if (!idea) {
+    throw new Error('Idea is required');
+  }
+
+  try {
+    const response = await fetch(`${import.meta.env.VITE_ANYTHING_LLM_API_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: "You are a website design expert who creates detailed prompts for AI website generation."
+          },
+          {
+            role: "user",
+            content: `Create a detailed website design prompt for the following startup idea: ${idea}
+
+Please include:
+1. Recommended website sections and pages
+2. Key features and functionality
+3. Design style and branding recommendations
+4. Content requirements
+5. User experience considerations
+6. Technical requirements
+7. Call-to-action suggestions
+8. SEO recommendations
+
+Make the prompt detailed enough for an AI tool to generate a complete website design.`
+          }
+        ],
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('API Error:', errorData);
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response format from API');
+    }
+
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error('Error generating website prompt:', error);
+    throw error;
+  }
+};

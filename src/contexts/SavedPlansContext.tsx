@@ -5,6 +5,7 @@ interface SavedPlansContextType {
   savedPlans: SavedPlan[];
   savePlan: (plan: SavedPlan) => void;
   removePlan: (id: string) => void;
+  downloadPlan: (id: string) => void;
 }
 
 const SavedPlansContext = createContext<SavedPlansContextType | null>(null);
@@ -27,8 +28,33 @@ export function SavedPlansProvider({ children }: { children: React.ReactNode }) 
     setSavedPlans(prev => prev.filter(plan => plan.id !== id));
   };
 
+  const downloadPlan = (id: string) => {
+    const plan = savedPlans.find(p => p.id === id);
+    if (!plan) return;
+
+    const downloadContent = {
+      idea: plan.idea,
+      timestamp: new Date(plan.timestamp).toLocaleString(),
+      plan: plan.plan,
+    };
+
+    const jsonString = JSON.stringify(downloadContent, null, 2);
+    
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    
+    link.href = url;
+    link.download = `startup-plan-${plan.id}.json`;
+    document.body.appendChild(link);
+    link.click();
+    
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <SavedPlansContext.Provider value={{ savedPlans, savePlan, removePlan }}>
+    <SavedPlansContext.Provider value={{ savedPlans, savePlan, removePlan, downloadPlan }}>
       {children}
     </SavedPlansContext.Provider>
   );

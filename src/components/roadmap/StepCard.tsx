@@ -16,13 +16,11 @@ function StepCard({ step, stepNumber }: StepCardProps) {
           <div className="flex items-center">
             <div className="flex items-center justify-center w-10 h-10 bg-indigo-50 rounded-xl">
               <span className="text-indigo-600 font-semibold">{stepNumber}</span>
-            </div>
+              </div>
             <div className="ml-4">
               <h3 className="text-xl font-semibold text-gray-900">{step.title}</h3>
               <p className="text-sm text-gray-500 mt-1 flex items-center">
-                <Clock className="h-4 w-4 mr-1" />
-                {step.estimatedTimeframe}
-              </p>
+             </p>
             </div>
           </div>
         </div>
@@ -54,11 +52,8 @@ function StepCard({ step, stepNumber }: StepCardProps) {
               </div>
               <p className="text-gray-600 ml-8 mb-4">{task.description}</p>
               
-              <div className="ml-8 flex flex-wrap gap-4">
-                <div className="flex items-center space-x-2 text-sm text-gray-500 bg-white px-3 py-1.5 rounded-lg border border-gray-100">
-                  <Clock className="h-4 w-4 text-indigo-500" />
-                  <span>{task.timeline}</span>
-                </div>
+              <div className="ml-8 flex flex-wrap gap-1">
+                
                 
                 {task.resources && (
                   <div className="flex items-center space-x-2 text-sm text-gray-500 bg-white px-3 py-1.5 rounded-lg border border-gray-100">

@@ -40,7 +40,7 @@ function IdeaGenerator({ vagueConcept, setVagueConcept, onGenerate, isLoading }:
   return (
     <div className="text-center space-y-8 max-w-3xl mx-auto">
       <div className="space-y-3">
-        <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+        <h1 className="text-3xl font-bold text-gray-900 sm:text-2xl">
           Transform Your Vague Idea Into a
           <span className="text-indigo-600"> Viable Startup</span>
         </h1>

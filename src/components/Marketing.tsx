@@ -6,7 +6,43 @@ interface MarketingProps {
   strategy: MarketingStrategy;
 }
 
+interface TimelineStep {
+  title: string;
+  duration: string;
+  tasks: string[];
+}
+
 function Marketing({ strategy }: MarketingProps) {
+  const timelineSteps: TimelineStep[] = [
+    {
+      title: "Launch & Awareness",
+      duration: "3 months",
+      tasks: [
+        "Create marketing materials",
+        "Launch digital advertising campaigns",
+        "Publish informative content"
+      ]
+    },
+    {
+      title: "Lead Generation & Conversion",
+      duration: "6 months",
+      tasks: [
+        "Run email campaigns",
+        "Participate in industry events",
+        "Host webinars"
+      ]
+    },
+    {
+      title: "Expansion & Retention",
+      duration: "Ongoing",
+      tasks: [
+        "Nurture customer relationships",
+        "Collect and analyze customer feedback",
+        "Expand customer base"
+      ]
+    }
+  ];
+
   return (
     <div className="space-y-8">
       <div className="bg-white rounded-lg shadow p-6">
@@ -39,25 +75,7 @@ function Marketing({ strategy }: MarketingProps) {
         </div>
 
         {/* Timeline */}
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold mb-4">Implementation Timeline</h3>
-          <div className="space-y-4">
-            {strategy.timeline.map((phase, index) => (
-              <div key={index} className="flex items-start space-x-4">
-                <Clock className="w-5 h-5 text-indigo-600 mt-1" />
-                <div>
-                  <h4 className="font-semibold">{phase.phase}</h4>
-                  <p className="text-sm text-gray-600">{phase.duration}</p>
-                  <ul className="list-disc list-inside mt-2 text-sm text-gray-600">
-                    {phase.activities.map((activity, idx) => (
-                      <li key={idx}>{activity}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        
 
         {/* KPIs */}
         <div className="mb-8">
