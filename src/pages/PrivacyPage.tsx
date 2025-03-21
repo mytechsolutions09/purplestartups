@@ -1,6 +1,4 @@
 import React from 'react';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 import { Shield, Lock, Eye, Database, Share2, Bell } from 'lucide-react';
 
 const PrivacyPage: React.FC = () => {
@@ -85,11 +83,8 @@ const PrivacyPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar onSelectPlan={() => {}} />
-      
-      <div className="flex-1 pt-20">
-        {/* Header */}
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-grow">
         <div className="bg-indigo-600 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">
@@ -101,9 +96,7 @@ const PrivacyPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Introduction */}
           <div className="prose prose-lg max-w-none mb-12">
             <p>
               At Startup Guru, we take your privacy seriously. This Privacy Policy explains how we collect, 
@@ -113,7 +106,6 @@ const PrivacyPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Privacy Sections */}
           <div className="space-y-12">
             {sections.map((section) => (
               <div key={section.id} id={section.id} className="bg-white rounded-xl shadow-md p-6">
@@ -136,7 +128,6 @@ const PrivacyPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Contact Section */}
           <div className="mt-12 bg-indigo-50 rounded-xl p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Contact Us
@@ -158,8 +149,6 @@ const PrivacyPage: React.FC = () => {
           </div>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };

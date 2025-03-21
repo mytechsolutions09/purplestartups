@@ -1,6 +1,4 @@
 import React from 'react';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 import { 
   Cookie, 
   Shield, 
@@ -119,11 +117,8 @@ const CookiesPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar onSelectPlan={() => {}} />
-      
-      <div className="flex-1 pt-20">
-        {/* Header */}
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-grow">
         <div className="bg-indigo-600 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">
@@ -135,9 +130,7 @@ const CookiesPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Introduction */}
           <div className="prose prose-lg max-w-none mb-12">
             <p>
               This Cookie Policy explains how Startup Guru uses cookies and similar technologies 
@@ -146,7 +139,6 @@ const CookiesPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Cookie Banner Preview */}
           <div className="bg-white rounded-xl shadow-md p-6 mb-12">
             <div className="flex items-center mb-4">
               <Info className="w-5 h-5 text-indigo-600 mr-2" />
@@ -173,7 +165,6 @@ const CookiesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Cookie Sections */}
           <div className="space-y-12">
             {sections.map((section) => (
               <div 
@@ -200,7 +191,6 @@ const CookiesPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Contact Section */}
           <div className="mt-12 bg-indigo-50 rounded-xl p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Questions About Cookies?
@@ -222,8 +212,6 @@ const CookiesPage: React.FC = () => {
           </div>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };

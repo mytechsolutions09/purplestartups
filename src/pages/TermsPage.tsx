@@ -1,6 +1,4 @@
 import React from 'react';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 import { 
   FileText, 
   Shield, 
@@ -118,11 +116,8 @@ const TermsPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar onSelectPlan={() => {}} />
-      
-      <div className="flex-1 pt-20">
-        {/* Header */}
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-grow">
         <div className="bg-indigo-600 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">
@@ -134,9 +129,7 @@ const TermsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Introduction */}
           <div className="prose prose-lg max-w-none mb-12">
             <p>
               These Terms of Service ("Terms") govern your access to and use of Startup Guru's platform, 
@@ -145,7 +138,6 @@ const TermsPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Table of Contents */}
           <div className="bg-white rounded-xl shadow-md p-6 mb-12">
             <h2 className="text-xl font-bold text-gray-900 mb-4">
               Table of Contents
@@ -164,7 +156,6 @@ const TermsPage: React.FC = () => {
             </nav>
           </div>
 
-          {/* Terms Sections */}
           <div className="space-y-12">
             {sections.map((section) => (
               <div 
@@ -191,7 +182,6 @@ const TermsPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Contact Section */}
           <div className="mt-12 bg-indigo-50 rounded-xl p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Contact Us
@@ -213,8 +203,6 @@ const TermsPage: React.FC = () => {
           </div>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };

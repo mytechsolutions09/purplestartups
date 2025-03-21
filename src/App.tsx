@@ -29,6 +29,21 @@ import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import CookiesPage from './pages/CookiesPage';
 import PricingPage from './pages/PricingPage';
+import { AuthProvider } from './contexts/AuthContext';
+import LoginPage from './pages/LoginPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import SignupPage from './pages/SignupPage';
+import ProfilePage from './pages/ProfilePage';
+import SavedIdeasPage from './pages/SavedIdeasPage';
+import SecurityPage from './pages/SecurityPage';
+import AccountSettingsPage from './pages/AccountSettingsPage';
+import DashboardPage from './pages/DashboardPage';
+import NotificationsPage from './pages/NotificationsPage';
+import BillingPage from './pages/BillingPage';
+import DashboardWelcome from './components/DashboardWelcome';
+import ApiSettingsPage from './pages/ApiSettingsPage';
+import ProfilePicturePage from './pages/ProfilePicturePage';
+import { SubscriptionProvider } from './contexts/SubscriptionContext';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -46,6 +61,7 @@ function App() {
   const [selectedIdea, setSelectedIdea] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<StartupPlan | null>(null);
+  const [showSidebar, setShowSidebar] = useState(false);
 
   const handleGenerateIdeas = async (concept: string) => {
     setIsLoading(true);
@@ -65,66 +81,112 @@ function App() {
   };
 
   return (
-    <StorePageProvider>
-      <SavedPlansProvider>
-        <BrowserRouter>
-          <ScrollToTop />
-          <Routes>
-            <Route path="/" element={
-              <div className="min-h-screen flex flex-col">
+    <AuthProvider>
+      <SubscriptionProvider>
+        <StorePageProvider>
+          <SavedPlansProvider>
+            <BrowserRouter>
+              <ScrollToTop />
+              <div className="flex min-h-screen flex-col">
                 <Navbar onSelectPlan={handleSelectSavedPlan} />
-                <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-                  {selectedIdea ? (
-                    <RoadmapView 
-                      idea={selectedIdea} 
-                      onBack={() => {
-                        setSelectedIdea(null);
-                        setCurrentPlan(null);
-                      }} 
-                    />
-                  ) : (
-                    <>
-                      <IdeaGenerator
-                        vagueConcept={vagueConcept}
-                        setVagueConcept={setVagueConcept}
-                        onGenerate={handleGenerateIdeas}
-                        isLoading={isLoading}
-                      />
-                      {ideas.length > 0 && (
-                        <IdeaList
-                          ideas={ideas}
-                          onSelectIdea={setSelectedIdea}
-                        />
-                      )}
-                    </>
+                
+                <div className="flex flex-1">
+                  {/* Sidebar if you have one */}
+                  {showSidebar && (
+                    <div className="w-64 bg-white shadow-sm">
+                      {/* Sidebar content */}
+                    </div>
                   )}
-                </main>
+                  
+                  {/* Main content */}
+                  <div className="flex-1">
+                    <Routes>
+                      {/* Public routes */}
+                      <Route path="/login" element={<LoginPage />} />
+                      <Route path="/signup" element={<SignupPage />} />
+                      <Route path="/" element={
+                        <div className="min-h-screen flex flex-col">
+                          <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+                            {selectedIdea ? (
+                              <RoadmapView 
+                                idea={selectedIdea} 
+                                onBack={() => {
+                                  setSelectedIdea(null);
+                                  setCurrentPlan(null);
+                                }} 
+                              />
+                            ) : (
+                              <>
+                                <IdeaGenerator
+                                  vagueConcept={vagueConcept}
+                                  setVagueConcept={setVagueConcept}
+                                  onGenerate={handleGenerateIdeas}
+                                  isLoading={isLoading}
+                                />
+                                {ideas.length > 0 && (
+                                  <IdeaList
+                                    ideas={ideas}
+                                    onSelectIdea={setSelectedIdea}
+                                  />
+                                )}
+                              </>
+                            )}
+                          </main>
+                        </div>
+                      } />
+                      
+                      {/* Protected routes */}
+                      <Route path="/roadmap" element={
+                        <ProtectedRoute>
+                          <RoadmapPage />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/product-roadmap" element={
+                        <ProtectedRoute>
+                          <ProductRoadmapPage />
+                        </ProtectedRoute>
+                      } />
+                      
+                      {/* Add more protected routes as needed */}
+                      
+                      {/* Public content pages */}
+                      <Route path="/features" element={<FeaturesPage />} />
+                      <Route path="/pricing" element={<PricingPage />} />
+                      <Route path="/about" element={<AboutPage />} />
+                      <Route path="/privacy" element={<PrivacyPage />} />
+                      <Route path="/terms" element={<TermsPage />} />
+                      <Route path="/cookies" element={<CookiesPage />} />
+                      
+                      {/* Dashboard with nested routes */}
+                      <Route path="/dashboard" element={
+                        <ProtectedRoute>
+                          <DashboardPage />
+                        </ProtectedRoute>
+                      }>
+                        <Route path="profile" element={<ProfilePage />} />
+                        <Route path="security" element={<SecurityPage />} />
+                        <Route path="saved-ideas" element={<SavedIdeasPage />} />
+                        <Route path="notifications" element={<NotificationsPage />} />
+                        <Route path="billing" element={<BillingPage />} />
+                        <Route path="api" element={<ApiSettingsPage />} />
+                        <Route path="avatar" element={<ProfilePicturePage />} />
+                        <Route path="help" element={<HelpPage />} />
+                        <Route index element={<DashboardWelcome />} />
+                      </Route>
+
+                      {/* Add this new route to handle roadmap with ID parameter */}
+                      <Route path="/roadmap/:id" element={<RoadmapPage />} />
+                    </Routes>
+                  </div>
+                </div>
+                
                 <Footer />
               </div>
-            } />
-            <Route path="/roadmap" element={<RoadmapPage />} />
-            <Route path="/product-roadmap" element={<ProductRoadmapPage />} />
-            <Route path="/follow-steps" element={<FollowStepsPage />} />
-            <Route path="/technology" element={<TechnologyPage />} />
-            <Route path="/recruitment" element={<RecruitmentPage />} />
-            <Route path="/marketing" element={<MarketingPage />} />
-            <Route path="/store" element={<StorePage />} />
-            <Route path="/apps" element={<AppsPage />} />
-            <Route path="/features" element={<FeaturesPage />} />
-            <Route path="/help" element={<HelpPage />} />
-            <Route path="/faq" element={<FAQPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/careers" element={<CareersPage />} />
-            <Route path="/blog" element={<BlogPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/terms" element={<TermsPage />} />
-            <Route path="/cookies" element={<CookiesPage />} />
-            <Route path="/pricing" element={<PricingPage />} />
-          </Routes>
-        </BrowserRouter>
-      </SavedPlansProvider>
-    </StorePageProvider>
+            </BrowserRouter>
+          </SavedPlansProvider>
+        </StorePageProvider>
+      </SubscriptionProvider>
+    </AuthProvider>
   );
 }
 

@@ -10,7 +10,6 @@ import {
   Globe
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 
 const AboutPage: React.FC = () => {
   const stats = [
@@ -71,9 +70,7 @@ const AboutPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar onSelectPlan={() => {}} />
-      
+    <div className="min-h-screen flex flex-col">
       <div className="flex-1 pt-20">
         {/* Hero Section */}
         <div className="bg-indigo-600 text-white">
@@ -204,8 +201,6 @@ const AboutPage: React.FC = () => {
           </div>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };

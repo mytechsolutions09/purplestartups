@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 import { 
   Check, 
   HelpCircle, 
@@ -31,6 +29,7 @@ const PricingPage: React.FC = () => {
       'Custom Business Plans',
       'Financial Projections',
       'Priority Support',
+      'All Apps Included',
       '2 Team Members',
       '10 Projects',
       'Custom Branding'
@@ -102,10 +101,8 @@ const PricingPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar onSelectPlan={() => {}} />
-      
-      <div className="flex-1 pt-20">
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-grow">
         {/* Header */}
         <div className="bg-indigo-600 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
@@ -267,8 +264,6 @@ const PricingPage: React.FC = () => {
           </div>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };

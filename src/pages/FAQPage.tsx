@@ -8,8 +8,6 @@ import {
   Send,
   Loader
 } from 'lucide-react';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 
 interface ContactFormData {
   name: string;
@@ -107,10 +105,8 @@ const ContactPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar onSelectPlan={() => {}} />
-      
-      <div className="flex-1 pt-20">
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-grow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Header */}
           <div className="text-center mb-12">
@@ -289,8 +285,6 @@ const ContactPage: React.FC = () => {
           </div>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };

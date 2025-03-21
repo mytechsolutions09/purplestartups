@@ -1,8 +1,6 @@
 import React from 'react';
 import { ArrowRight, MessageCircle, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 
 function AppsPage() {
   const navigate = useNavigate();
@@ -13,8 +11,6 @@ function AppsPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar onSelectPlan={handleSelectPlan} />
-      
       <div className="flex-grow">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-indigo-700 to-blue-600 text-white">
@@ -93,8 +89,6 @@ function AppsPage() {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

@@ -1,8 +1,10 @@
 import OpenAI from 'openai';
 import type { StartupPlan, ResearchProject, TechnologyTrend, MarketingStrategy } from '../types';
 
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+
 const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_ANYTHING_LLM_API_KEY,
+  apiKey: OPENAI_API_KEY,
   dangerouslyAllowBrowser: true
 });
 

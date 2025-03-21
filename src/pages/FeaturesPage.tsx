@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Brain, Rocket, Target, Clock, Shield, Code } from 'lucide-react';
 import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
 
 const FeaturesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -41,10 +40,8 @@ const FeaturesPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar onSelectPlan={() => {}} />
-      
-      <div className="flex-1 pt-20">
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-grow">
         {/* Hero Section */}
         <div className="bg-indigo-600 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -95,8 +92,6 @@ const FeaturesPage: React.FC = () => {
           </div>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };

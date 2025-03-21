@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
 import { useSavedPlans } from '../contexts/SavedPlansContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import type { StartupPlan } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { LogOut, LogIn, UserPlus, LayoutDashboard } from 'lucide-react';
 
 interface NavbarProps {
   onSelectPlan: (plan: StartupPlan) => void;
@@ -12,6 +14,12 @@ function Navbar({ onSelectPlan }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { savedPlans, removePlan } = useSavedPlans();
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white shadow-sm z-40">
@@ -19,23 +27,72 @@ function Navbar({ onSelectPlan }: NavbarProps) {
         <div className="flex justify-between items-center h-16">
           {/* Logo Section */}
           <div className="flex-shrink-0 flex items-center">
-            <a href="/" className="flex items-center space-x-3">
+            <Link to="/" className="flex items-center space-x-3">
               <div className="bg-indigo-100 p-2 rounded-lg">
                 <Icons.Rocket className="h-6 w-6 text-indigo-600" />
               </div>
               <span className="text-xl font-bold text-gray-900">StartupGuru</span>
-            </a>
+            </Link>
           </div>
 
           {/* Right-aligned items */}
           <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigate('/apps')}
-              className="hidden md:flex items-center space-x-2 px-4 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-colors"
+            <Link
+              to="/features"
+              className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
             >
-              <Icons.Grid className="h-5 w-5" />
-              <span>Apps</span>
-            </button>
+              Features
+            </Link>
+            <Link
+              to="/pricing"
+              className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+            >
+              Pricing
+            </Link>
+            <Link
+              to="/about"
+              className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+            >
+              About
+            </Link>
+          </div>
+
+          <div className="flex items-center">
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <Link
+                  to="/dashboard"
+                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  <LayoutDashboard className="h-4 w-4 mr-1" />
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  <LogOut className="h-4 w-4 mr-1" />
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Link
+                  to="/login"
+                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  <LogIn className="h-4 w-4 mr-1" />
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  <UserPlus className="h-4 w-4 mr-1" />
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

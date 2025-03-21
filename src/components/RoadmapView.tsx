@@ -28,17 +28,18 @@ import PptxGenJS from "pptxgenjs";
 
 interface RoadmapViewProps {
   idea: string;
-  onBack: () => void;
+  onBack?: () => void;
+  savedPlanData?: any;
 }
 
-function RoadmapView({ idea, onBack }: RoadmapViewProps) {
+function RoadmapView({ idea, onBack, savedPlanData }: RoadmapViewProps) {
   const navigate = useNavigate();
   // State management for different sections of the roadmap
   const [plan, setPlan] = useState<StartupPlan | null>(null);
   const [marketMetrics, setMarketMetrics] = useState<MarketMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { savedPlans, savePlan } = useSavedPlans();
+  const { savedPlans, savePlan, isPlanSaved } = useSavedPlans();
   
   // Track which section is currently active for navigation
   const [activeSection, setActiveSection] = useState('overview');
@@ -56,87 +57,154 @@ function RoadmapView({ idea, onBack }: RoadmapViewProps) {
   const [websitePrompt, setWebsitePrompt] = useState<string | null>(null);
   const [isPromptLoading, setIsPromptLoading] = useState(false);
 
+  console.log('RoadmapView received savedPlanData:', savedPlanData);
+
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        // First generate the plan since other calls might depend on it
-        const generatedPlan = await generateStartupPlanWithAI(idea);
-        
-        // Then load all other data in parallel
-        const [
-          analysis, 
-          competitorData, 
-          risks, 
-          rdData, 
-          marketing
-        ] = await Promise.all([
-          getMarketAnalysis(idea),
-          getCompetitorAnalysis(idea),
-          generateRiskAssessment(idea),
-          getResearchAndDevelopment(idea),
-          getMarketingStrategy(idea)
-        ]);
-
-        // Update all section states
-        setPlan(generatedPlan);
-        setMarketMetrics(analysis);
-        setCompetitors(competitorData);
-        setRiskAssessment(risks);
-        setResearchData(rdData);
-        setMarketingStrategy(marketing);
-
-        // Generate website prompt separately to avoid blocking other data
-        setIsPromptLoading(true);
-        try {
-          console.log('Generating website prompt for idea:', idea);
-          const prompt = await generateWebsitePrompt(idea);
-          console.log('Successfully generated prompt:', prompt);
-          setWebsitePrompt(prompt);
-        } catch (promptErr) {
-          console.error('Website prompt generation failed:', promptErr);
-          // Don't let prompt errors affect the rest of the app
-        } finally {
-          setIsPromptLoading(false);
-        }
-
-        // Save plan if not already saved
-        if (!hasSavedRef.current) {
-          const isAlreadySaved = savedPlans.some(
-            savedPlan => savedPlan.idea === generatedPlan.idea
-          );
-          
-          if (!isAlreadySaved) {
-            const newSavedPlan = {
-              id: crypto.randomUUID(),
-              idea: generatedPlan.idea,
-              timestamp: Date.now(),
-              plan: generatedPlan
-            };
-            
-            savePlan(newSavedPlan);
-          }
-          hasSavedRef.current = true;
-        }
-      } catch (err) {
-        console.error('Error loading data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to generate plan');
-      } finally {
-        setIsLoading(false);
+    // If we have savedPlanData from Supabase
+    if (savedPlanData) {
+      console.log('Processing savedPlanData:', savedPlanData);
+      
+      // Detailed logging of each section
+      console.log('Plan data:', savedPlanData.plan_data?.plan || savedPlanData.plan);
+      console.log('Market data:', savedPlanData.plan_data?.marketMetrics || savedPlanData.marketMetrics);
+      console.log('Competitor data:', savedPlanData.plan_data?.competitors || savedPlanData.competitors);
+      console.log('Risk data:', savedPlanData.plan_data?.riskAssessment || savedPlanData.riskAssessment);
+      console.log('Research data:', savedPlanData.plan_data?.researchData || savedPlanData.researchData);
+      console.log('Marketing data:', savedPlanData.plan_data?.marketingStrategy || savedPlanData.marketingStrategy);
+      
+      // Handle Supabase structure (plan_data) vs local structure (plan)
+      const planData = savedPlanData.plan_data?.plan || savedPlanData.plan;
+      const marketData = savedPlanData.plan_data?.marketMetrics || savedPlanData.marketMetrics;
+      const competitorData = savedPlanData.plan_data?.competitors || savedPlanData.competitors;
+      const riskData = savedPlanData.plan_data?.riskAssessment || savedPlanData.riskAssessment;
+      const researchProjectData = savedPlanData.plan_data?.researchData || savedPlanData.researchData;
+      const marketingData = savedPlanData.plan_data?.marketingStrategy || savedPlanData.marketingStrategy;
+      const websitePromptData = savedPlanData.plan_data?.websitePrompt || savedPlanData.websitePrompt;
+      
+      // Set all sections with detailed logging
+      if (planData) {
+        console.log('Setting plan data:', planData);
+        setPlan(planData);
       }
-    };
-
-    if (idea) {
-      loadData();
-    }
-
-    return () => {
+      
+      if (marketData) {
+        console.log('Setting market data:', marketData);
+        setMarketMetrics(marketData);
+      }
+      
+      if (competitorData) {
+        console.log('Setting competitor data:', competitorData);
+        setCompetitors(competitorData);
+      }
+      
+      if (riskData) {
+        console.log('Setting risk data:', riskData);
+        setRiskAssessment(riskData);
+      }
+      
+      if (researchProjectData) {
+        console.log('Setting research data:', researchProjectData);
+        setResearchData(researchProjectData);
+      }
+      
+      if (marketingData) {
+        console.log('Setting marketing data:', marketingData);
+        setMarketingStrategy(marketingData);
+      }
+      
+      if (websitePromptData) {
+        console.log('Setting website data:', websitePromptData);
+        setWebsitePrompt(websitePromptData);
+      }
+      
       setIsLoading(false);
-      setError(null);
-      hasSavedRef.current = false;
-    };
-  }, [idea, savedPlans, savePlan]);
+    } else if (idea) {
+      // If no savedPlanData, load from API as before
+      // existing code for loading from API...
+      setIsLoading(true);
+      const loadPlanData = async () => {
+        try {
+          // First generate the plan since other calls might depend on it
+          const generatedPlan = await generateStartupPlanWithAI(idea);
+          
+          // Then load all other data in parallel
+          const [
+            analysis, 
+            competitorData, 
+            risks, 
+            rdData, 
+            marketing
+          ] = await Promise.all([
+            getMarketAnalysis(idea),
+            getCompetitorAnalysis(idea),
+            generateRiskAssessment(idea),
+            getResearchAndDevelopment(idea),
+            getMarketingStrategy(idea)
+          ]);
+
+          // Update all section states
+          setPlan(generatedPlan);
+          setMarketMetrics(analysis);
+          setCompetitors(competitorData);
+          setRiskAssessment(risks);
+          setResearchData(rdData);
+          setMarketingStrategy(marketing);
+
+          // Generate website prompt separately to avoid blocking other data
+          setIsPromptLoading(true);
+          try {
+            console.log('Generating website prompt for idea:', idea);
+            const prompt = await generateWebsitePrompt(idea);
+            console.log('Successfully generated prompt:', prompt);
+            setWebsitePrompt(prompt);
+          } catch (promptErr) {
+            console.error('Website prompt generation failed:', promptErr);
+            // Don't let prompt errors affect the rest of the app
+          } finally {
+            setIsPromptLoading(false);
+          }
+
+          // Save plan if not already saved
+          if (!hasSavedRef.current) {
+            const isAlreadySaved = isPlanSaved(idea);
+            
+            if (!isAlreadySaved) {
+              const newSavedPlan = {
+                id: crypto.randomUUID(),
+                idea: generatedPlan.idea,
+                timestamp: Date.now(),
+                plan: generatedPlan,
+                marketMetrics: analysis || null,
+                competitors: competitorData || [],
+                riskAssessment: risks || null,
+                researchData: {
+                  projects: rdData?.projects || [],
+                  trends: rdData?.trends || []
+                },
+                marketingStrategy: marketing || null,
+                websitePrompt: prompt || null
+              };
+              
+              savePlan(newSavedPlan);
+            }
+            hasSavedRef.current = true;
+          }
+        } catch (err) {
+          console.error('Error loading data:', err);
+          setError(err instanceof Error ? err.message : 'Failed to generate plan');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      loadPlanData();
+    }
+  }, [savedPlanData, idea]);
+
+  // Scroll to the top of the page when the idea changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [idea]);
 
   // Smooth scroll handler for navigation
   const scrollToSection = (sectionId: string) => {
@@ -433,35 +501,78 @@ function RoadmapView({ idea, onBack }: RoadmapViewProps) {
               ref={el => contentRef.current['competitors'] = el}
               className="scroll-mt-32"
             >
-              <CompetitorAnalysis competitors={competitors} />
+              {competitors && competitors.length > 0 ? (
+                <CompetitorAnalysis competitors={competitors} />
+              ) : (
+                <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                  <h2 className="text-xl font-semibold mb-4">Competitor Analysis</h2>
+                  <p className="text-gray-600">No competitor data available for this plan.</p>
+                </div>
+              )}
             </div>
 
             <div 
               ref={el => contentRef.current['risks'] = el}
               className="scroll-mt-32"
             >
-              {riskAssessment && <RiskAssessment {...riskAssessment} />}
+              {riskAssessment ? (
+                <RiskAssessment 
+                  marketRisks={riskAssessment.marketRisks || []} 
+                  technicalRisks={riskAssessment.technicalRisks || []} 
+                  financialRisks={riskAssessment.financialRisks || []} 
+                  operationalRisks={riskAssessment.operationalRisks || []} 
+                />
+              ) : (
+                <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                  <h2 className="text-xl font-semibold mb-4">Risk Assessment</h2>
+                  <p className="text-gray-600">No risk assessment data available for this plan.</p>
+                </div>
+              )}
             </div>
 
             <div 
               ref={el => contentRef.current['research'] = el}
               className="scroll-mt-32"
             >
-              {researchData && <ResearchAndDevelopment {...researchData} />}
+              {researchData && researchData.projects ? (
+                <ResearchAndDevelopment 
+                  projects={researchData.projects} 
+                  trends={researchData.trends || []} 
+                />
+              ) : (
+                <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                  <h2 className="text-xl font-semibold mb-4">Research & Development</h2>
+                  <p className="text-gray-600">No research and development data available for this plan.</p>
+                </div>
+              )}
             </div>
 
             <div 
               ref={el => contentRef.current['marketing'] = el}
               className="scroll-mt-32"
             >
-              {marketingStrategy && <Marketing strategy={marketingStrategy} />}
+              {marketingStrategy ? (
+                <Marketing strategy={marketingStrategy} />
+              ) : (
+                <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                  <h2 className="text-xl font-semibold mb-4">Marketing Strategy</h2>
+                  <p className="text-gray-600">No marketing strategy data available for this plan.</p>
+                </div>
+              )}
             </div>
 
             <div 
               ref={el => contentRef.current['trends'] = el}
               className="scroll-mt-32"
             >
-              {researchData && <TechnologyTrends trends={researchData.trends} />}
+              {researchData && researchData.trends && researchData.trends.length > 0 ? (
+                <TechnologyTrends trends={researchData.trends} />
+              ) : (
+                <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                  <h2 className="text-xl font-semibold mb-4">Technology Trends</h2>
+                  <p className="text-gray-600">No technology trends data available for this plan.</p>
+                </div>
+              )}
             </div>
 
             <div 
