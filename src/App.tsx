@@ -6,7 +6,7 @@ import RoadmapView from './components/RoadmapView';
 import { generateIdeasWithAI } from './utils/api';
 import { SavedPlansProvider } from './contexts/SavedPlansContext';
 import Navbar from './components/Navbar';
-import { StartupPlan } from './types';
+import { StartupPlan } from './types/StartupPlan';
 import FollowStepsPage from './pages/FollowStepsPage';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import RoadmapPage from './pages/RoadmapPage';
