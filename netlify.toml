@@ -1,9 +1,10 @@
 [build]
-  # Base directory where your package.json is located
   base = "/"
+  command = "npm install && node build-fix.js"
+  publish = "dist"
   
   # Build command
-  command = "npm run build"
+  command = "node scripts/netlify-build.js"
   
   # Directory with the built files that will be deployed
   publish = "dist"
@@ -11,7 +12,8 @@
 # Environment variables
 [build.environment]
   NODE_VERSION = "18"
-  VITE_OPENAI_API_KEY = "your_api_key_here"
+  # Add your actual API keys in the Netlify UI, not here for security reasons
+  # VITE_OPENAI_API_KEY = "your_api_key_here"
 
 # Redirects for SPA
 [[redirects]]
@@ -27,3 +29,14 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Set proper headers for JavaScript modules
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Content-Type = "application/javascript"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Content-Type = "text/css"

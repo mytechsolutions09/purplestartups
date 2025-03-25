@@ -1,0 +1,6 @@
+# GitHub Pages configuration
+include:
+  - "*.html"
+  - "*.js"
+  - "*.css"
+  - "*.svg" 

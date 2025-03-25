@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUUID } from '../utils/uuid';
 import type { SavedPlan } from '../types';
 import { supabase } from '../utils/supabaseClient';
 import { useAuth } from './AuthContext';
@@ -74,7 +74,7 @@ export function SavedPlansProvider({ children }: { children: React.ReactNode }) 
     try {
       setError(null);
       const newPlan: SavedPlan = {
-        id: uuidv4(),
+        id: generateUUID(),
         idea: plan.idea,
         timestamp: Date.now(),
         plan: plan.plan,
