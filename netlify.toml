@@ -1,12 +1,6 @@
 [build]
   base = "/"
-  command = "npm install && node build-fix.js"
-  publish = "dist"
-  
-  # Build command
-  command = "node scripts/netlify-build.js"
-  
-  # Directory with the built files that will be deployed
+  command = "node fix-netlify-build.js"
   publish = "dist"
 
 # Environment variables
