@@ -1,11 +1,12 @@
 [build]
-  base = "/"
-  command = "node fix-netlify-build.js"
+  command = "node netlify-build-fix.js"
   publish = "dist"
 
 # Environment variables
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "16"
+  NPM_VERSION = "8"
+  PYTHON_VERSION = "3.9"
   # Add your actual API keys in the Netlify UI, not here for security reasons
   # VITE_OPENAI_API_KEY = "your_api_key_here"
 
@@ -15,7 +16,7 @@
   to = "/index.html"
   status = 200
 
-# Headers for security and caching
+# Headers for security
 [[headers]]
   for = "/*"
   [headers.values]

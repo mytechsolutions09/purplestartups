@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/fix-import.cjs",
+    "prebuild": "node netlify-build-plugin.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",

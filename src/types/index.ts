@@ -36,9 +36,16 @@ export interface StartupPlan {
 export interface SavedPlan {
   id: string;
   idea: string;
-  plan: StartupPlan;
+  overview: string;
+  problemStatement: string;
+  targetMarket: {
+    demographics: string[];
+    psychographics: string[];
+    marketSize: string;
+  };
+  valueProposition: string;
+  steps: StartupStep[];
   timestamp: number;
-  userId?: string;
 }
 
 export interface Risk {
