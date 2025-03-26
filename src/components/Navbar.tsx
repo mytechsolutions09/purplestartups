@@ -5,6 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import type { StartupPlan } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut, LogIn, UserPlus, LayoutDashboard } from 'lucide-react';
+import Logo from './Logo';
 
 interface NavbarProps {
   onSelectPlan: (plan: StartupPlan) => void;
@@ -27,12 +28,7 @@ function Navbar({ onSelectPlan }: NavbarProps) {
         <div className="flex justify-between items-center h-16">
           {/* Logo Section */}
           <div className="flex-shrink-0 flex items-center">
-            <Link to="/" className="flex items-center space-x-3">
-              <div className="bg-indigo-100 p-2 rounded-lg">
-                <Icons.Rocket className="h-6 w-6 text-indigo-600" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">StartupGuru</span>
-            </Link>
+            <Logo />
           </div>
 
           {/* Right-aligned items */}

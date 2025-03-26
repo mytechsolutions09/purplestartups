@@ -36,8 +36,9 @@ export interface StartupPlan {
 export interface SavedPlan {
   id: string;
   idea: string;
-  timestamp: number;
   plan: StartupPlan;
+  timestamp: number;
+  userId?: string;
 }
 
 export interface Risk {

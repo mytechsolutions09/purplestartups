@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Github, Twitter, Linkedin, Mail } from 'lucide-react';
+import Logo from './Logo';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -8,6 +9,11 @@ export default function Footer() {
   return (
     <footer className="bg-white border-t mt-16 py-6 relative z-10 w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Add logo at the top of footer */}
+        <div className="flex justify-center mb-6">
+          <Logo className="text-2xl" />
+        </div>
+
         {/* Main Links Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-sm justify-items-center">
           {/* Product Section */}
