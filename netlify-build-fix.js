@@ -64,6 +64,14 @@ function fixUuidImports() {
   }
 }
 
+// Fix for crypto getRandomValues on Netlify
+if (typeof window === 'undefined' && !global.crypto) {
+  const crypto = require('crypto');
+  global.crypto = {
+    getRandomValues: (arr) => crypto.randomFillSync(arr)
+  };
+}
+
 // Main execution
 try {
   ensureUuidUtilExists();

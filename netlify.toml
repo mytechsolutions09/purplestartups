@@ -5,9 +5,10 @@
 
 # Environment variables
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "18.19.0"  # Specify a specific version that works with Vite
   NPM_VERSION = "9"
   PYTHON_VERSION = "3.9"
+  NODE_OPTIONS = "--max-old-space-size=4096"  # Give Node more memory for the build
   # Add your actual API keys in the Netlify UI, not here for security reasons
   # VITE_OPENAI_API_KEY = "your_api_key_here"
   GIT_LFS_ENABLED = "true"
