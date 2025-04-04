@@ -10,9 +10,6 @@
   PYTHON_VERSION = "3.9"
   # Add your actual API keys in the Netlify UI, not here for security reasons
   # VITE_OPENAI_API_KEY = "your_api_key_here"
-
-# Important: Tell Netlify to fetch submodules during build
-[build.environment]
   GIT_LFS_ENABLED = "true"
 
 [build.processing]
