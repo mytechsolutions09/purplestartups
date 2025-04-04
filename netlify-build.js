@@ -18,6 +18,21 @@ if (typeof window === 'undefined' && !global.crypto) {
   }
 }
 
+// Fix PostCSS config if it exists
+try {
+  const postcssConfigPath = path.join(process.cwd(), 'postcss.config.js');
+  if (fs.existsSync(postcssConfigPath)) {
+    const content = fs.readFileSync(postcssConfigPath, 'utf8');
+    if (content.includes('export default')) {
+      console.log('Converting PostCSS config to CommonJS format...');
+      const newContent = content.replace('export default', 'module.exports =');
+      fs.writeFileSync(postcssConfigPath, newContent);
+    }
+  }
+} catch (err) {
+  console.warn('Warning when fixing PostCSS config:', err.message);
+}
+
 // Now run the build process
 const { execSync } = require('child_process');
 
