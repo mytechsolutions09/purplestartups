@@ -15,14 +15,6 @@
 [build.processing]
   skip_processing = false
 
-# This is the key part for submodules
-[[plugins]]
-  package = "@netlify/plugin-git-submodules"
-
-  [plugins.inputs]
-    # Enable submodule fetching
-    submodules = true
-
 # Redirects for SPA
 [[redirects]]
   from = "/*"
