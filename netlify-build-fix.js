@@ -15,9 +15,10 @@ try {
 }
 
 // Write clean version files with proper UTF-8 encoding
-fs.writeFileSync('.nvmrc', '16\n', {encoding: 'utf8'});
-fs.writeFileSync('.node-version', '16\n', {encoding: 'utf8'});
-fs.writeFileSync('.python-version', '3.9\n', {encoding: 'utf8'});
+fs.writeFileSync('.nvmrc', '18.19.0\n', {encoding: 'utf8'});
+fs.writeFileSync('.node-version', '18.19.0\n', {encoding: 'utf8'});
+fs.writeFileSync('.python-version', '3.9.0\n', {encoding: 'utf8'});
+fs.writeFileSync('runtime.txt', '3.9.0\n', {encoding: 'utf8'});
 console.log('Created fresh version files with UTF-8 encoding');
 
 // Function to ensure utils/uuid.ts exists
