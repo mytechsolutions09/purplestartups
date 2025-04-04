@@ -1,0 +1,13 @@
+/* Default logo size for desktop */
+.logo {
+  width: 200px; /* or your current logo width */
+  height: auto; /* maintain aspect ratio */
+}
+
+/* Smaller logo size for mobile devices */
+@media screen and (max-width: 768px) {
+  .logo {
+    width: 120px; /* reduced size for mobile */
+    height: auto;
+  }
+} 

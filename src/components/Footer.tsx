@@ -9,13 +9,8 @@ export default function Footer() {
   return (
     <footer className="bg-white border-t mt-16 py-6 relative z-10 w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Add logo at the top of footer */}
-        <div className="flex justify-center mb-6">
-          <Logo className="text-2xl" />
-        </div>
-
         {/* Main Links Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-sm justify-items-center">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-sm justify-items-center mb-8">
           {/* Product Section */}
           <div className="text-center w-full">
             <h3 className="font-semibold text-gray-400 uppercase mb-4">PRODUCT</h3>
@@ -56,9 +51,14 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Logo centered */}
+        <div className="flex justify-center my-6">
+          <Logo className="text-2xl" />
+        </div>
+
         {/* Social Links & Copyright */}
-        <div className="mt-8 pt-6 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-          <div className="flex space-x-4">
+        <div className="mt-8 pt-6 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center">
+          <div className="flex space-x-4 mb-4 md:mb-0">
             <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-500">
               <Github className="h-5 w-5" />
             </a>
@@ -71,7 +71,7 @@ export default function Footer() {
           </div>
           
           <p className="text-sm text-gray-400">
-            © {currentYear} Startup Guru. All rights reserved.
+            © {currentYear} Purple Startups . All rights reserved.
           </p>
         </div>
       </div>

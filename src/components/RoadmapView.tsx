@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Loader, Save, Layout, BarChart, Calculator, GitBranch, Shield, AlertTriangle, TrendingDown, Building, Tool, Microscope, TrendingUp, Megaphone, Code, FileText, Share2, Presentation } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import StepCard from './roadmap/StepCard';
 import PlanOverview from './roadmap/PlanOverview';
 import { generateStartupPlanWithAI } from '../utils/api';
@@ -209,7 +209,7 @@ function RoadmapView({ idea, onBack, savedPlanData }: RoadmapViewProps) {
   // Smooth scroll handler for navigation
   const scrollToSection = (sectionId: string) => {
     if (sectionId === 'store') {
-      navigate('/store'); // Navigate to store route
+      navigate('/dashboard/saved-ideas'); // Navigate to saved-ideas route
       return;
     }
     
@@ -379,28 +379,34 @@ function RoadmapView({ idea, onBack, savedPlanData }: RoadmapViewProps) {
           onClick={onBack}
           className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors mb-4 w-full text-sm"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <LucideIcons.ArrowLeft className="h-4 w-4" />
           <span>Back</span>
         </button>
 
         <div className="flex flex-col space-y-1">
           {[
-            { id: 'overview', icon: Layout, label: 'Overview' },
-            { id: 'market', icon: BarChart, label: 'Market' },
-            { id: 'competitors', icon: Shield, label: 'Competitors' },
-            { id: 'risks', icon: AlertTriangle, label: 'Risks' },
-            { id: 'research', icon: Microscope, label: 'R&D' },
-            { id: 'marketing', icon: Megaphone, label: 'Marketing' },
-            { id: 'trends', icon: TrendingUp, label: 'Trends' },
-            { id: 'website', icon: Code, label: 'Website' },
-            { id: 'store', icon: Building, label: 'Store', external: true },
-          ].map(({ id, icon: Icon, label, external }) => (
+            { id: 'overview', icon: LucideIcons.Layout, label: 'Overview' },
+            { id: 'market', icon: LucideIcons.BarChart, label: 'Market' },
+            { id: 'competitors', icon: LucideIcons.Shield, label: 'Competitors' },
+            { id: 'risks', icon: LucideIcons.AlertTriangle, label: 'Risks' },
+            { id: 'research', icon: LucideIcons.Microscope, label: 'R&D' },
+            { id: 'marketing', icon: LucideIcons.Megaphone, label: 'Marketing' },
+            { id: 'trends', icon: LucideIcons.TrendingUp, label: 'Trends' },
+            { id: 'website', icon: LucideIcons.Code, label: 'Website' },
+            { id: 'store', icon: LucideIcons.Building, label: 'Store', path: '/dashboard/saved-ideas' },
+          ].map(({ id, icon: Icon, label, path }) => (
             <button
               key={id}
-              onClick={() => scrollToSection(id)}
+              onClick={() => {
+                if (path) {
+                  navigate(path);
+                } else {
+                  setActiveSection(id);
+                }
+              }}
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg w-full text-left text-sm ${
-                activeSection === id && !external
-                  ? 'bg-indigo-600 text-white'
+                activeSection === id 
+                  ? 'bg-purple-100 text-purple-700' 
                   : 'bg-white text-gray-600 hover:bg-gray-100'
               }`}
             >
@@ -418,9 +424,9 @@ function RoadmapView({ idea, onBack, savedPlanData }: RoadmapViewProps) {
           <div className="mb-8 flex justify-end">
             <div className="flex items-center gap-2">
               {[
-                { id: 'pdf', icon: FileText, ariaLabel: 'Export as PDF' },
-                { id: 'presentation', icon: Presentation, ariaLabel: 'Create Presentation' },
-                { id: 'share', icon: Share2, ariaLabel: 'Share Link' }
+                { id: 'pdf', icon: LucideIcons.FileText, ariaLabel: 'Export as PDF' },
+                { id: 'presentation', icon: LucideIcons.Presentation, ariaLabel: 'Create Presentation' },
+                { id: 'share', icon: LucideIcons.Share2, ariaLabel: 'Share Link' }
               ].map(({ id, icon: Icon, ariaLabel }) => (
                 <button
                   key={id}
@@ -440,7 +446,7 @@ function RoadmapView({ idea, onBack, savedPlanData }: RoadmapViewProps) {
         {isLoading ? (
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="flex flex-col items-center space-y-4">
-              <Loader className="h-8 w-8 text-indigo-600 animate-spin" />
+              <LucideIcons.Loader className="h-8 w-8 text-indigo-600 animate-spin" />
               <p className="text-gray-600">Generating your startup plan...</p>
             </div>
           </div>
@@ -582,7 +588,7 @@ function RoadmapView({ idea, onBack, savedPlanData }: RoadmapViewProps) {
               {isPromptLoading ? (
                 <div className="p-6 bg-white rounded-lg shadow-md">
                   <div className="flex items-center justify-center">
-                    <Loader className="h-8 w-8 text-indigo-600 animate-spin" />
+                    <LucideIcons.Loader className="h-8 w-8 text-indigo-600 animate-spin" />
                     <span className="ml-2">Generating website prompt...</span>
                   </div>
                 </div>

@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { CreditCard, DollarSign, Clock, Plus, Loader, AlertTriangle, CheckCircle, XCircle, Zap, Star, Building } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
+import { useSubscription, PLAN_TYPES } from '../contexts/SubscriptionContext';
 
 interface PaymentMethod {
   id: string;
@@ -47,13 +48,22 @@ interface PricingPlan {
 
 const BillingPage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
+  const { 
+    subscription, 
+    upgradeToPro, 
+    upgradeToEnterprise,
+    remainingPlans
+  } = useSubscription();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [billingHistory, setBillingHistory] = useState<BillingHistory[]>([]);
   const [isAddingPayment, setIsAddingPayment] = useState(false);
   const [isChangingPlan, setIsChangingPlan] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [billingInfo, setBillingInfo] = useState<any>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal'>('card');
 
   const pricingPlans: PricingPlan[] = [
     {
@@ -92,12 +102,13 @@ const BillingPage: React.FC = () => {
         { name: 'Custom Business Plans', included: true },
         { name: 'Financial Projections', included: true },
         { name: 'Priority Support', included: true },
-        { name: 'All Apps Included', included: true },
+        { name: 'All Apps Included*coming soon*', included: true },
         { name: '2 Team Members', included: true },
         { name: '10 Projects', included: true },
-        { name: 'Custom Branding', included: true },
         { name: 'Dedicated Account Manager', included: false },
-        { name: 'Custom AI Models', included: false }
+        
+        { name: 'Dedicated Account Manager', included: false },
+        
       ]
     },
     {
@@ -123,47 +134,39 @@ const BillingPage: React.FC = () => {
     }
   ];
 
-  // Mock data for demo purposes
   useEffect(() => {
     if (user) {
-      // Simulate API call to fetch billing data
-      setTimeout(() => {
-        setSubscription({
-          plan: 'pro',
-          status: 'active',
-          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          cancel_at_period_end: false,
-          billing_cycle: 'annually'
-        });
-        
-        setPaymentMethods([{
-          id: 'pm_123456789',
-          last4: '4242',
-          brand: 'Visa',
-          exp_month: 12,
-          exp_year: 2024,
-          isDefault: true
-        }]);
-        
-        setBillingHistory([
-          {
-            id: 'in_1234',
-            date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-            amount: 199.99,
-            status: 'paid',
-            invoice_url: '#'
-          },
-          {
-            id: 'in_1235',
-            date: new Date().toISOString(),
-            amount: 199.99,
-            status: 'paid',
-            invoice_url: '#'
-          }
-        ]);
-        
-        setIsLoading(false);
-      }, 1000);
+      // Initialize with demo data
+      setPaymentMethods([{
+        id: 'pm_123456789',
+        last4: '4242',
+        brand: 'Visa',
+        exp_month: 12,
+        exp_year: 2024,
+        isDefault: true
+      }]);
+      
+      setBillingHistory([
+        {
+          id: 'in_1234',
+          date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          amount: 199.99,
+          status: 'paid',
+          invoice_url: '#'
+        },
+        {
+          id: 'in_1235',
+          date: new Date().toISOString(),
+          amount: 199.99,
+          status: 'paid',
+          invoice_url: '#'
+        }
+      ]);
+      
+      // Set billing cycle based on user's preferences (could come from DB)
+      setBillingCycle('monthly');
+      
+      setIsLoading(false);
     }
   }, [user]);
 
@@ -202,44 +205,222 @@ const BillingPage: React.FC = () => {
     );
   };
 
-  const handleCancelSubscription = () => {
-    if (subscription) {
-      setSubscription({
-        ...subscription,
-        cancel_at_period_end: true
-      });
+  const handleCancelSubscription = async () => {
+    setIsChangingPlan(true);
+    try {
+      // Call the API to cancel subscription
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .update({ cancel_at_period_end: true })
+        .eq('user_id', user?.id);
+        
+      if (error) throw error;
+      
+      // Refetch billing info
+      fetchBillingInfo();
+    } catch (err) {
+      console.error('Error canceling subscription:', err);
+      setError('Failed to cancel subscription. Please try again.');
+    } finally {
+      setIsChangingPlan(false);
     }
   };
 
-  const handleResumeSubscription = () => {
-    if (subscription) {
-      setSubscription({
-        ...subscription,
-        cancel_at_period_end: false
-      });
+  const handleResumeSubscription = async () => {
+    setIsChangingPlan(true);
+    try {
+      // Call the API to resume subscription
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .update({ cancel_at_period_end: false })
+        .eq('user_id', user?.id);
+        
+      if (error) throw error;
+      
+      // Refetch billing info
+      fetchBillingInfo();
+    } catch (err) {
+      console.error('Error resuming subscription:', err);
+      setError('Failed to resume subscription. Please try again.');
+    } finally {
+      setIsChangingPlan(false);
     }
   };
 
-  const handleChangePlan = (planId: 'free' | 'pro' | 'enterprise') => {
+  const handleChangePlan = async (planId: 'free' | 'pro' | 'enterprise') => {
     setIsChangingPlan(true);
-    setTimeout(() => {
-      setSubscription({
-        ...subscription!,
-        plan: planId
-      });
+    setError(null);
+    
+    try {
+      let success = false;
+      
+      if (planId === 'pro') {
+        success = await upgradeToPro(paymentMethod);
+      } else if (planId === 'enterprise') {
+        success = await upgradeToEnterprise(paymentMethod);
+      }
+      
+      if (!success) {
+        throw new Error('Failed to upgrade plan');
+      }
+      
+      // Refetch billing info
+      fetchBillingInfo();
+    } catch (err) {
+      console.error('Error changing plan:', err);
+      setError('Failed to change plan. Please try again.');
+    } finally {
       setIsChangingPlan(false);
-    }, 1500);
+    }
   };
 
-  const handleChangeBillingCycle = (cycle: 'monthly' | 'annually') => {
+  const handleChangeBillingCycle = async (cycle: 'monthly' | 'annually') => {
     setIsChangingPlan(true);
-    setTimeout(() => {
-      setSubscription({
-        ...subscription!,
-        billing_cycle: cycle
-      });
+    try {
+      // Update the billing cycle in user_subscriptions table instead
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .update({ billing_cycle: cycle })
+        .eq('user_id', user?.id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setBillingCycle(cycle);
+    } catch (err) {
+      console.error('Error changing billing cycle:', err);
+      setError('Failed to change billing cycle. Please try again.');
+    } finally {
       setIsChangingPlan(false);
-    }, 1000);
+    }
+  };
+
+  // Get current plan display info
+  const getCurrentPlanInfo = () => {
+    // Find the matching plan from pricingPlans based on subscription
+    const plan = pricingPlans.find(p => p.id === (subscription.plan === PLAN_TYPES.BASIC ? 'free' : 
+                                                 subscription.plan === PLAN_TYPES.PRO ? 'pro' : 'enterprise'));
+    
+    if (plan) {
+      return plan; // Return the complete plan with features from pricingPlans
+    }
+    
+    // Fallback plan with features if no match found
+    switch (subscription.plan) {
+      case PLAN_TYPES.ENTERPRISE:
+        return {
+          name: 'Enterprise',
+          monthlyPrice: 29.99,
+          annualPrice: 299.88,
+          annualSavings: 59.99,
+          planLimit: 50,
+          id: 'enterprise',
+          description: 'For larger organizations',
+          icon: <Building className="h-6 w-6 text-indigo-500" />,
+          features: [
+            { name: 'Everything in Pro, plus:', included: true },
+            { name: '50 Projects', included: true },
+            { name: 'Dedicated Account Manager', included: true },
+            { name: 'Custom AI Models', included: true },
+            { name: 'Enterprise Analytics', included: true },
+            { name: 'SLA Support', included: true },
+            { name: 'Unlimited Team Members', included: true }
+          ]
+        };
+      case PLAN_TYPES.PRO:
+        return {
+          name: 'Pro',
+          monthlyPrice: 9.99,
+          annualPrice: 99.99,
+          annualSavings: 19.89,
+          planLimit: 10,
+          id: 'pro',
+          description: 'For growing businesses',
+          icon: <Star className="h-6 w-6 text-pink-500" />,
+          features: [
+            { name: 'Everything in Basic, plus:', included: true },
+            { name: 'Advanced AI Analysis', included: true },
+            { name: 'Custom Business Plans', included: true },
+            { name: 'Financial Projections', included: true },
+            { name: 'Priority Support', included: true },
+            { name: '10 Projects', included: true }
+          ]
+        };
+      default:
+        return {
+          name: 'Free',
+          monthlyPrice: 0,
+          annualPrice: 0,
+          annualSavings: 0,
+          planLimit: 2,
+          id: 'free',
+          description: 'For personal use',
+          icon: <Zap className="h-6 w-6 text-gray-500" />,
+          features: [
+            { name: 'AI Startup Generator', included: true },
+            { name: 'Basic Business Plan Templates', included: true },
+            { name: 'Market Research Tools', included: true },
+            { name: '2 Projects per month', included: true }
+          ]
+        };
+    }
+  };
+
+  const currentPlan = getCurrentPlanInfo();
+
+  useEffect(() => {
+    // Update billing info whenever subscription changes
+    console.log('BillingPage: Current subscription plan:', subscription.plan);
+    
+    if (subscription && user) {
+      fetchBillingInfo();
+    }
+  }, [subscription, user]);
+
+  const fetchBillingInfo = async () => {
+    // Fetch billing details from DB
+    try {
+      const { data, error } = await supabase
+        .from('billing_info')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
+        
+      if (error && error.code !== 'PGRST116') throw error;
+      setBillingInfo(data || null);
+    } catch (err) {
+      console.error('Error fetching billing info:', err);
+    }
+  };
+
+  const handleUpgrade = async (planId: string) => {
+    setIsChangingPlan(true);
+    setError(null);
+    
+    try {
+      // Call the appropriate upgrade function based on the plan ID
+      let result: any; // Using any temporarily to fix the type error
+      if (planId === 'pro') {
+        result = await upgradeToPro(paymentMethod);
+      } else if (planId === 'enterprise') {
+        result = await upgradeToEnterprise(paymentMethod);
+      } else {
+        throw new Error(`Unknown plan ID: ${planId}`);
+      }
+      
+      if (result && typeof result === 'object' && result.redirectUrl) {
+        // For PayPal, redirect to complete payment
+        window.location.href = result.redirectUrl;
+        return;
+      }
+      
+      // Handle success/error as before
+      // ... existing code ...
+    } catch (error) {
+      // ... existing error handling ...
+    } finally {
+      setIsChangingPlan(false);
+    }
   };
 
   if (authLoading || isLoading) {
@@ -254,13 +435,25 @@ const BillingPage: React.FC = () => {
     return <Navigate to="/login" replace />;
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    }).format(date);
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    
+    try {
+      const date = new Date(dateString);
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return 'N/A';
+      }
+      
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      }).format(date);
+    } catch (err) {
+      console.error('Error formatting date:', err);
+      return 'N/A';
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -270,11 +463,15 @@ const BillingPage: React.FC = () => {
     }).format(amount);
   };
 
-  const currentPlan = pricingPlans.find(plan => plan.id === subscription?.plan);
-  
-  const nextBillingDate = subscription
-    ? formatDate(subscription.current_period_end)
-    : '';
+  const getNextBillingDate = () => {
+    if (!subscription || !subscription.current_period_end) {
+      return 'N/A';
+    }
+    
+    return formatDate(subscription.current_period_end);
+  };
+
+  const nextBillingDate = getNextBillingDate();
 
   const currentPrice = subscription?.billing_cycle === 'annually'
     ? currentPlan?.annualPrice
@@ -301,9 +498,9 @@ const BillingPage: React.FC = () => {
                 Current Plan
               </h3>
               
-              {subscription?.cancel_at_period_end && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  Canceling on {nextBillingDate}
+              {subscription.plan !== PLAN_TYPES.BASIC && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  {billingCycle === 'annually' ? 'Annual' : 'Monthly'}
                 </span>
               )}
             </div>
@@ -318,7 +515,7 @@ const BillingPage: React.FC = () => {
                   
                   {currentPlan?.id !== 'free' && (
                     <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {subscription?.billing_cycle === 'annually' ? 'Annual' : 'Monthly'}
+                      {billingCycle === 'annually' ? 'Annual' : 'Monthly'}
                     </span>
                   )}
                 </div>
@@ -326,7 +523,7 @@ const BillingPage: React.FC = () => {
                 
                 {currentPlan?.id !== 'free' && (
                   <p className="mt-2 text-sm text-gray-600">
-                    {subscription?.billing_cycle === 'annually' ? (
+                    {billingCycle === 'annually' ? (
                       <>
                         <span className="font-semibold">{formatCurrency(currentPlan.annualPrice!)}</span> per month, billed annually.
                         <span className="ml-1 text-green-600">
@@ -342,10 +539,14 @@ const BillingPage: React.FC = () => {
                 )}
                 
                 <p className="mt-2 text-sm text-gray-600">
+                  Plan limit: {currentPlan.planLimit || currentPlan.planLimit} roadmaps per month
+                </p>
+                
+                <p className="mt-2 text-sm text-gray-600">
                   Next billing date: <span className="font-medium">{nextBillingDate}</span>
                 </p>
                 
-                {subscription?.cancel_at_period_end && (
+                {subscription.plan !== PLAN_TYPES.BASIC && (
                   <p className="mt-2 text-sm text-red-600">
                     Your subscription will end on {nextBillingDate}.
                   </p>
@@ -354,7 +555,7 @@ const BillingPage: React.FC = () => {
                 <div className="mt-4 flex flex-wrap gap-2">
                   {currentPlan?.id !== 'free' && (
                     <div className="mt-4 space-x-3">
-                      {subscription?.billing_cycle === 'monthly' && (
+                      {billingCycle === 'monthly' && (
                         <button
                           type="button"
                           onClick={() => handleChangeBillingCycle('annually')}
@@ -369,7 +570,7 @@ const BillingPage: React.FC = () => {
                         </button>
                       )}
                       
-                      {subscription?.billing_cycle === 'annually' && (
+                      {billingCycle === 'annually' && (
                         <button
                           type="button"
                           onClick={() => handleChangeBillingCycle('monthly')}
@@ -385,28 +586,15 @@ const BillingPage: React.FC = () => {
                     </div>
                   )}
                   
-                  {subscription?.cancel_at_period_end ? (
+                  {subscription.plan !== PLAN_TYPES.BASIC && (
                     <button
                       type="button"
-                      onClick={handleResumeSubscription}
-                      className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none"
+                      onClick={handleCancelSubscription}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
                     >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Resume Subscription
+                      <XCircle className="h-4 w-4 mr-2 text-red-500" />
+                      Cancel Subscription
                     </button>
-                  ) : (
-                    <>
-                      {currentPlan?.id !== 'free' && (
-                        <button
-                          type="button"
-                          onClick={handleCancelSubscription}
-                          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-                        >
-                          <XCircle className="h-4 w-4 mr-2 text-red-500" />
-                          Cancel Subscription
-                        </button>
-                      )}
-                    </>
                   )}
                 </div>
               </div>
@@ -524,6 +712,37 @@ const BillingPage: React.FC = () => {
                 Add Payment Method
               </button>
             </div>
+          </div>
+        </div>
+        
+        {/* Payment method selection */}
+        <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
+          <h3 className="text-lg font-medium mb-4">Payment Method</h3>
+          
+          <div className="flex space-x-4">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="card"
+                checked={paymentMethod === 'card'}
+                onChange={() => setPaymentMethod('card')}
+                className="h-4 w-4 text-indigo-600"
+              />
+              <span>Credit/Debit Card</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="paypal"
+                checked={paymentMethod === 'paypal'}
+                onChange={() => setPaymentMethod('paypal')}
+                className="h-4 w-4 text-indigo-600"
+              />
+              <span>PayPal</span>
+            </label>
           </div>
         </div>
         
@@ -698,7 +917,9 @@ const BillingPage: React.FC = () => {
                         {isChangingPlan ? (
                           <Loader className="animate-spin h-4 w-4 mr-2" />
                         ) : null}
-                        {plan.id === 'free' ? 'Downgrade' : subscription?.plan === 'free' ? 'Upgrade' : plan.id === 'enterprise' ? 'Upgrade' : 'Downgrade'}
+                        {plan.id === 'free' ? 'Downgrade' : 
+                          (subscription?.plan === 'free' as any) ? 'Upgrade' : 
+                          plan.id === 'enterprise' ? 'Upgrade' : 'Downgrade'}
                       </button>
                     )}
                   </div>

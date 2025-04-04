@@ -2,8 +2,26 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '../utils/supabaseClient';
 import { PaymentService } from '../services/PaymentService';
+import { createBroadcastChannel } from '../utils/broadcastChannel';
 
-type PlanType = 'basic' | 'pro' | 'enterprise';
+// Create a broadcast channel for subscription changes
+const subscriptionChannel = createBroadcastChannel('subscription_updates');
+
+// Define plan types as constants to ensure consistency
+export const PLAN_TYPES = {
+  BASIC: 'basic' as const,
+  PRO: 'pro' as const,
+  ENTERPRISE: 'enterprise' as const
+};
+
+type PlanType = typeof PLAN_TYPES[keyof typeof PLAN_TYPES];
+
+// Define plan limits
+export const PLAN_LIMITS = {
+  [PLAN_TYPES.BASIC]: 2,
+  [PLAN_TYPES.PRO]: 10,
+  [PLAN_TYPES.ENTERPRISE]: 50
+};
 
 interface SubscriptionState {
   plan: PlanType;
@@ -17,9 +35,10 @@ interface SubscriptionContextType {
   subscription: SubscriptionState;
   incrementPlansGenerated: () => Promise<boolean>; // Returns true if within quota
   canGeneratePlan: boolean;
-  upgradeToPro: () => Promise<boolean>;
-  upgradeToEnterprise: () => Promise<boolean>;
+  upgradeToPro: (paymentMethod?: 'card' | 'paypal') => Promise<boolean>;
+  upgradeToEnterprise: (paymentMethod?: 'card' | 'paypal') => Promise<boolean>;
   remainingPlans: number;
+  completePayPalUpgrade: (paymentId: string, payerId: string) => Promise<boolean>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
@@ -27,113 +46,139 @@ const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [subscription, setSubscription] = useState<SubscriptionState>({
-    plan: 'basic',
+    plan: PLAN_TYPES.BASIC,
     plansGenerated: 0,
-    plansLimit: 2, // Basic plan default
+    plansLimit: PLAN_LIMITS[PLAN_TYPES.BASIC],
     nextReset: null,
     isLoading: true
   });
 
+  // Listen for subscription changes from other tabs/components
   useEffect(() => {
-    const fetchSubscription = async () => {
-      if (!user) {
-        setSubscription({
-          plan: 'basic',
-          plansGenerated: 0,
-          plansLimit: 2,
-          nextReset: null,
-          isLoading: false
-        });
-        return;
+    subscriptionChannel.addEventListener('message', (event: MessageEvent) => {
+      if (event.data.type === 'SUBSCRIPTION_UPDATED' && 
+          event.data.userId === user?.id) {
+        console.log('Received subscription update:', event.data.plan);
+        fetchSubscription();
+      }
+    });
+
+    return () => {
+      subscriptionChannel.close();
+    };
+  }, [user?.id]);
+
+  // Function to fetch subscription data
+  const fetchSubscription = async () => {
+    if (!user) {
+      setSubscription({
+        plan: PLAN_TYPES.BASIC,
+        plansGenerated: 0,
+        plansLimit: PLAN_LIMITS[PLAN_TYPES.BASIC],
+        nextReset: null,
+        isLoading: false
+      });
+      return;
+    }
+
+    try {
+      // Get the user's subscription data
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      console.log('Fetched subscription data:', data);
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
       }
 
-      try {
-        // Get the user's subscription data
-        const { data, error } = await supabase
+      if (!data) {
+        // Create a new subscription record for this user
+        const now = new Date();
+        const nextMonth = new Date(now);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        
+        const { data: newData, error: insertError } = await supabase
           .from('user_subscriptions')
+          .insert({
+            user_id: user.id,
+            plan: PLAN_TYPES.BASIC,
+            plans_generated: 0,
+            plans_limit: PLAN_LIMITS[PLAN_TYPES.BASIC],
+            reset_date: nextMonth.toISOString()
+          })
           .select('*')
-          .eq('user_id', user.id)
           .single();
-
-        if (error && error.code !== 'PGRST116') {
-          throw error;
+          
+        if (insertError) throw insertError;
+        
+        setSubscription({
+          plan: PLAN_TYPES.BASIC,
+          plansGenerated: 0,
+          plansLimit: PLAN_LIMITS[PLAN_TYPES.BASIC],
+          nextReset: nextMonth,
+          isLoading: false
+        });
+      } else {
+        // Validate the plan type
+        let planType: PlanType = data.plan;
+        if (!Object.values(PLAN_TYPES).includes(planType)) {
+          console.warn(`Unknown plan type "${planType}" found in database, defaulting to BASIC`);
+          planType = PLAN_TYPES.BASIC;
         }
 
-        if (!data) {
-          // Create a new subscription record for this user
-          const now = new Date();
+        // Check if we need to reset the counter
+        const resetDate = new Date(data.reset_date);
+        const now = new Date();
+        
+        if (now > resetDate) {
+          // Reset the counter and set a new reset date
           const nextMonth = new Date(now);
           nextMonth.setMonth(nextMonth.getMonth() + 1);
           
-          const { data: newData, error: insertError } = await supabase
+          await supabase
             .from('user_subscriptions')
-            .insert({
-              user_id: user.id,
-              plan: 'basic',
+            .update({
               plans_generated: 0,
-              plans_limit: 2,
               reset_date: nextMonth.toISOString()
             })
-            .select('*')
-            .single();
+            .eq('user_id', user.id);
             
-          if (insertError) throw insertError;
-          
           setSubscription({
-            plan: 'basic',
+            plan: planType,
             plansGenerated: 0,
-            plansLimit: 2,
+            plansLimit: PLAN_LIMITS[planType],
             nextReset: nextMonth,
             isLoading: false
           });
         } else {
-          // Check if we need to reset the counter
-          const resetDate = new Date(data.reset_date);
-          const now = new Date();
-          
-          if (now > resetDate) {
-            // Reset the counter and set a new reset date
-            const nextMonth = new Date(now);
-            nextMonth.setMonth(nextMonth.getMonth() + 1);
-            
-            await supabase
-              .from('user_subscriptions')
-              .update({
-                plans_generated: 0,
-                reset_date: nextMonth.toISOString()
-              })
-              .eq('user_id', user.id);
-              
-            setSubscription({
-              plan: data.plan,
-              plansGenerated: 0,
-              plansLimit: data.plan === 'basic' ? 2 : 10,
-              nextReset: nextMonth,
-              isLoading: false
-            });
-          } else {
-            // Use existing data
-            setSubscription({
-              plan: data.plan,
-              plansGenerated: data.plans_generated,
-              plansLimit: data.plan === 'basic' ? 2 : 10,
-              nextReset: resetDate,
-              isLoading: false
-            });
-          }
+          // Use existing data
+          setSubscription({
+            plan: planType,
+            plansGenerated: data.plans_generated,
+            plansLimit: PLAN_LIMITS[planType],
+            nextReset: resetDate,
+            isLoading: false
+          });
         }
-      } catch (err) {
-        console.error('Error fetching subscription:', err);
-        setSubscription({
-          plan: 'basic',
-          plansGenerated: 0,
-          plansLimit: 2,
-          nextReset: null,
-          isLoading: false
-        });
       }
-    };
+    } catch (err) {
+      console.error('Error fetching subscription:', err);
+      setSubscription({
+        plan: PLAN_TYPES.BASIC,
+        plansGenerated: 0,
+        plansLimit: PLAN_LIMITS[PLAN_TYPES.BASIC],
+        nextReset: null,
+        isLoading: false
+      });
+    }
+  };
 
+  // Initialize subscription data
+  useEffect(() => {
     fetchSubscription();
   }, [user]);
 
@@ -141,7 +186,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     if (!user) return false;
     
     if (subscription.plansGenerated >= subscription.plansLimit) {
-      return false; // Quota exceeded
+      // Already at the limit
+      return false;
     }
     
     try {
@@ -166,35 +212,66 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const upgradeToPro = async (): Promise<boolean> => {
+  const upgradeToPro = async (paymentMethod: 'card' | 'paypal' = 'card'): Promise<boolean> => {
     if (!user) return false;
     
     try {
-      // Process payment first
+      const paymentService = new PaymentService();
       const paymentResult = await PaymentService.processPayment({
         userId: user.id,
-        planType: 'pro',
-        amount: 9.99,
-        currency: 'USD'
+        planType: PLAN_TYPES.PRO,
+        amount: 1999, // $19.99
+        currency: 'USD',
+        paymentMethod: paymentMethod
       });
       
-      // Only update the subscription if payment was successful
+      if (paymentResult.redirectUrl) {
+        // For PayPal, we need to redirect and handle the success callback
+        // Store the intent to upgrade in localStorage or your backend
+        localStorage.setItem('pendingUpgrade', JSON.stringify({
+          userId: user.id,
+          plan: PLAN_TYPES.PRO,
+          timestamp: Date.now()
+        }));
+        
+        return true; // The redirect will happen in the component
+      }
+      
       if (paymentResult.success) {
+        console.log('Upgrading to Pro plan...');
         const { error } = await supabase
           .from('user_subscriptions')
           .update({
-            plan: 'pro',
-            plans_limit: 10
+            plan: PLAN_TYPES.PRO,
+            plans_limit: PLAN_LIMITS[PLAN_TYPES.PRO]
           })
           .eq('user_id', user.id);
           
         if (error) throw error;
         
+        // Verify the update was successful
+        const { data: updatedData, error: verifyError } = await supabase
+          .from('user_subscriptions')
+          .select('plan')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (verifyError) throw verifyError;
+        
+        console.log('Database plan updated to:', updatedData?.plan);
+        
         setSubscription(prev => ({
           ...prev,
-          plan: 'pro',
-          plansLimit: 10
+          plan: PLAN_TYPES.PRO,
+          plansLimit: PLAN_LIMITS[PLAN_TYPES.PRO]
         }));
+        
+        // Broadcast the subscription change
+        subscriptionChannel.postMessage({
+          type: 'SUBSCRIPTION_UPDATED',
+          userId: user.id,
+          plan: PLAN_TYPES.PRO
+        });
         
         return true;
       } else {
@@ -208,35 +285,85 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const upgradeToEnterprise = async (): Promise<boolean> => {
+  const upgradeToEnterprise = async (paymentMethod: 'card' | 'paypal' = 'card'): Promise<boolean> => {
     if (!user) return false;
     
     try {
-      // Process payment first
+      const paymentService = new PaymentService();
       const paymentResult = await PaymentService.processPayment({
         userId: user.id,
-        planType: 'enterprise',
-        amount: 29.99,
-        currency: 'USD'
+        planType: PLAN_TYPES.ENTERPRISE,
+        amount: 2999, // $29.99
+        currency: 'USD',
+        paymentMethod: paymentMethod
       });
       
-      // Only update the subscription if payment was successful
+      if (paymentResult.redirectUrl) {
+        // For PayPal, we need to redirect and handle the success callback
+        // Store the intent to upgrade in localStorage or your backend
+        localStorage.setItem('pendingUpgrade', JSON.stringify({
+          userId: user.id,
+          plan: PLAN_TYPES.ENTERPRISE,
+          timestamp: Date.now()
+        }));
+        
+        return true; // The redirect will happen in the component
+      }
+      
       if (paymentResult.success) {
+        console.log('Upgrading to Enterprise plan...');
+        
+        // First verify current plan
+        const { data: currentData } = await supabase
+          .from('user_subscriptions')
+          .select('plan')
+          .eq('user_id', user.id)
+          .single();
+          
+        console.log('Current plan before update:', currentData?.plan);
+        
+        // Update the subscription plan in the database
         const { error } = await supabase
           .from('user_subscriptions')
           .update({
-            plan: 'enterprise',
-            plans_limit: 50
+            plan: PLAN_TYPES.ENTERPRISE,
+            plans_limit: PLAN_LIMITS[PLAN_TYPES.ENTERPRISE]
           })
           .eq('user_id', user.id);
           
-        if (error) throw error;
+        if (error) {
+          console.error('Failed to update plan in database:', error);
+          throw error;
+        }
         
-        setSubscription(prev => ({
-          ...prev,
-          plan: 'enterprise',
-          plansLimit: 50
-        }));
+        // Verify the update was successful
+        const { data: updatedData, error: verifyError } = await supabase
+          .from('user_subscriptions')
+          .select('plan')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (verifyError) throw verifyError;
+        
+        console.log('Database plan updated to:', updatedData?.plan);
+        
+        // Force update local state to match database
+        setSubscription(prev => {
+          const updated = {
+            ...prev,
+            plan: PLAN_TYPES.ENTERPRISE,
+            plansLimit: PLAN_LIMITS[PLAN_TYPES.ENTERPRISE]
+          };
+          console.log('Updated local subscription state:', updated);
+          return updated;
+        });
+        
+        // Broadcast the subscription change
+        subscriptionChannel.postMessage({
+          type: 'SUBSCRIPTION_UPDATED',
+          userId: user.id,
+          plan: PLAN_TYPES.ENTERPRISE
+        });
         
         return true;
       } else {
@@ -253,6 +380,30 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const canGeneratePlan = subscription.plansGenerated < subscription.plansLimit;
   const remainingPlans = subscription.plansLimit - subscription.plansGenerated;
 
+  const completePayPalUpgrade = async (paymentId: string, payerId: string): Promise<boolean> => {
+    // This would verify the PayPal payment with your backend
+    // For now we'll simulate success
+    
+    const pendingUpgrade = localStorage.getItem('pendingUpgrade');
+    if (!pendingUpgrade) return false;
+    
+    const upgradeData = JSON.parse(pendingUpgrade);
+    
+    // Update the subscription in your backend
+    // ... code to update subscription ...
+    
+    // Clear the pending upgrade
+    localStorage.removeItem('pendingUpgrade');
+    
+    // Update the local state
+    setSubscription({
+      ...subscription,
+      plan: upgradeData.plan
+    });
+    
+    return true;
+  };
+
   return (
     <SubscriptionContext.Provider value={{ 
       subscription,
@@ -260,7 +411,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       canGeneratePlan,
       upgradeToPro,
       upgradeToEnterprise,
-      remainingPlans
+      remainingPlans,
+      completePayPalUpgrade
     }}>
       {children}
     </SubscriptionContext.Provider>

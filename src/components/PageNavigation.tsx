@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout, BarChart, Calculator, GitBranch, Shield, AlertTriangle, Microscope, Megaphone, TrendingUp } from 'lucide-react';
+import { Layout, BarChart, Calculator, GitBranch, Shield, AlertTriangle, Microscope, Megaphone, TrendingUp, Code } from 'lucide-react';
 
 interface PageNavigationProps {
   activeSection: string;
@@ -17,6 +17,7 @@ function PageNavigation({ activeSection, onSectionChange }: PageNavigationProps)
     { id: 'research', label: 'R&D', icon: Microscope },
     { id: 'marketing', label: 'Marketing', icon: Megaphone },
     { id: 'trends', label: 'Trends', icon: TrendingUp },
+    { id: 'website', label: 'Website', icon: Code },
   ];
 
   return (

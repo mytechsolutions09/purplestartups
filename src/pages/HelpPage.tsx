@@ -66,31 +66,14 @@ const HelpPage: React.FC = () => {
       <div className="flex-grow">
         {/* Hero Section */}
         <div className="bg-indigo-600 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl mb-4">
-                How can we help you?
-              </h1>
-              <p className="text-xl text-indigo-100 max-w-2xl mx-auto">
-                Find answers to common questions, explore our guides, or reach out to our support team.
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+            <div className="text-center mt-10">
+              <h2 className="text-3xl font-bold text-white sm:text-4xl">
+                Help Center
+              </h2>
+              <p className="mt-4 text-lg text-white max-w-2xl mx-auto">
+                Find resources and support to help you make the most of our platform.
               </p>
-              
-              {/* Search Bar */}
-              <div className="mt-8 max-w-xl mx-auto">
-                <div className="flex items-center bg-white rounded-lg shadow-sm">
-                  <div className="px-4">
-                    <Search className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search for help articles..."
-                    className="flex-1 py-3 px-4 block w-full border-0 focus:ring-0 text-gray-900 rounded-r-lg"
-                  />
-                </div>
-                <div className="mt-3 text-sm text-indigo-100">
-                  Popular searches: Getting Started, Pricing, Account Settings
-                </div>
-              </div>
             </div>
           </div>
         </div>

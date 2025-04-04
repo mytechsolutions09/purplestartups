@@ -1,5 +1,7 @@
 import React from 'react';
 import { ArrowRight, Lightbulb, TrendingUp, Users, Target } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface IdeaListProps {
   ideas: string[];
@@ -7,12 +9,14 @@ interface IdeaListProps {
 }
 
 function IdeaList({ ideas, onSelectIdea }: IdeaListProps) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
   // Helper function to get a random accent color class
   const getAccentColor = (index: number) => {
     const colors = [
-      'bg-indigo-50 border-indigo-200 hover:bg-indigo-100',
-      
-      
+      'bg-purple-50 border-purple-200 hover:bg-purple-100',
+      'bg-violet-50 border-violet-200 hover:bg-violet-100',
     ];
     return colors[index % colors.length];
   };
@@ -28,6 +32,17 @@ function IdeaList({ ideas, onSelectIdea }: IdeaListProps) {
     return icons[index % icons.length];
   };
 
+  // Handle idea selection with auth check
+  const handleSelectIdea = (idea: string) => {
+    if (!user) {
+      // Redirect to login if not authenticated
+      navigate('/login', { state: { from: window.location.pathname, ideaToSelect: idea } });
+    } else {
+      // User is authenticated, proceed with selection
+      onSelectIdea(idea);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto">
         <h2 className=" text-xl font-bold mb-6 text-gray-900 ">List of Ideas</h2>
@@ -36,7 +51,7 @@ function IdeaList({ ideas, onSelectIdea }: IdeaListProps) {
         {ideas.map((idea, index) => (
           <button
             key={index}
-            onClick={() => onSelectIdea(idea)}
+            onClick={() => handleSelectIdea(idea)}
             className={`group relative p-6 rounded-xl border-2 transition-all duration-200 
               ${getAccentColor(index)}
               transform hover:scale-102 hover:shadow-md`}
@@ -63,7 +78,7 @@ function IdeaList({ ideas, onSelectIdea }: IdeaListProps) {
             {/* Decorative corner accent */}
             <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden">
               <div className={`absolute transform rotate-45 translate-x-8 -translate-y-8 w-16 h-3 
-                ${index % 2 === 0 ? 'bg-indigo-100' : 'bg-emerald-100'}`} 
+                ${index % 2 === 0 ? 'bg-purple-100' : 'bg-violet-100'}`} 
               />
             </div>
           </button>

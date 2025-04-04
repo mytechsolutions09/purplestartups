@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Settings, Shield, FileText, Bell, CreditCard, Key, Image, HelpCircle } from 'lucide-react';
+import { Settings, Shield, FileText, Bell, CreditCard, Key, Image, HelpCircle, LogOut } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 interface SidebarLinkProps {
@@ -34,7 +34,7 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({ icon, title, description, to,
 );
 
 const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
+  const { signOut, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -44,6 +44,11 @@ const DashboardPage: React.FC = () => {
       navigate('/dashboard/profile', { replace: true });
     }
   }, [location.pathname, navigate]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -118,6 +123,13 @@ const DashboardPage: React.FC = () => {
                     isActive={location.pathname === item.to}
                   />
                 ))}
+                <button 
+                  onClick={handleSignOut}
+                  className="flex w-full items-center px-4 py-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-md mt-auto"
+                >
+                  <LogOut className="mr-3 h-5 w-5" />
+                  Sign Out
+                </button>
               </div>
             </div>
           </div>

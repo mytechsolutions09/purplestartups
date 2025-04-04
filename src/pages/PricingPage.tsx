@@ -105,16 +105,18 @@ const PricingPage: React.FC = () => {
       <div className="flex-grow">
         {/* Header */}
         <div className="bg-indigo-600 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">
-              Choose the Right Plan for Your Business
-            </h1>
-            <p className="text-xl text-indigo-100 mb-8">
-              All plans include our core features. Upgrade or downgrade at any time.
-            </p>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+            <div className="text-center mt-10">
+              <h2 className="text-3xl font-bold text-white-900 sm:text-4xl">
+                Choose the Right Plan for Your Business
+              </h2>
+              <p className="mt-4 text-lg text-white-600 max-w-2xl mx-auto mb-8">
+                All plans include our core features. Upgrade or downgrade at any time.
+              </p>
+            </div>
 
             {/* Pricing Toggle */}
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center gap-4 mt-4">
               <span className={`text-lg ${!isAnnual ? 'text-white' : 'text-indigo-200'}`}>
                 Monthly
               </span>

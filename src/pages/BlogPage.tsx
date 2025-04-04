@@ -58,22 +58,14 @@ const BlogPage: React.FC = () => {
       <div className="flex-grow">
         {/* Hero Section */}
         <div className="bg-indigo-600 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-            <div className="max-w-3xl">
-              <h1 className="text-4xl md:text-5xl font-bold mb-6">
-                Startup Insights & Innovation
-              </h1>
-              <p className="text-xl text-indigo-100 mb-8">
-                Discover the latest trends, strategies, and success stories in the startup ecosystem. Learn from industry experts and stay ahead of the curve.
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+            <div className="text-center mt-10">
+              <h2 className="text-3xl font-bold text-white sm:text-4xl">
+                Blog & Resources
+              </h2>
+              <p className="mt-4 text-lg text-white max-w-2xl mx-auto">
+                Insights, guides, and entrepreneurial wisdom from our team and community.
               </p>
-              <div className="flex flex-wrap gap-4">
-                <button className="px-6 py-3 bg-white text-indigo-600 font-medium rounded-lg hover:bg-indigo-50 transition-colors">
-                  Latest Articles
-                </button>
-                <button className="px-6 py-3 bg-indigo-500 text-white font-medium rounded-lg hover:bg-indigo-400 transition-colors">
-                  Subscribe to Newsletter
-                </button>
-              </div>
             </div>
           </div>
         </div>

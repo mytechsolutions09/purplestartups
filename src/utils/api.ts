@@ -583,3 +583,29 @@ Make the prompt detailed enough for an AI tool to generate a complete website de
     throw error;
   }
 };
+
+interface MarketMetrics {
+  marketSize: string;
+  growthRate: string;
+  competitorCount: number;
+  customerAcquisitionCost: string;
+}
+
+interface RiskAssessment {
+  marketRisks: {
+    risk: string;
+    impact: 'High' | 'Medium' | 'Low';
+    mitigation: string;
+  }[];
+  financialRisks: {
+    risk: string;
+    impact: 'High' | 'Medium' | 'Low';
+    mitigation: string;
+  }[];
+  operationalRisks: {
+    risk: string;
+    impact: 'High' | 'Medium' | 'Low';
+    mitigation: string;
+  }[];
+  overallRiskScore: number;
+}

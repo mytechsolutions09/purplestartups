@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Lightbulb, Loader } from 'lucide-react';
+import { Lightbulb, Loader, Sparkles } from 'lucide-react';
 import { getTrendingKeywords } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../utils/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import QuotaExceededModal from './QuotaExceededModal';
+import TrendingKeywords from './TrendingKeywords';
 
 interface IdeaGeneratorProps {
   vagueConcept: string;
@@ -22,7 +23,7 @@ function IdeaGenerator({ vagueConcept, setVagueConcept, onGenerate, isLoading }:
   const navigate = useNavigate();
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const { canGeneratePlan, incrementPlansGenerated, remainingPlans } = useSubscription();
+  const { canGeneratePlan, incrementPlansGenerated, remainingPlans, subscription } = useSubscription();
   const [showQuotaModal, setShowQuotaModal] = useState(false);
 
   // Load trending keywords on component mount
@@ -48,42 +49,34 @@ function IdeaGenerator({ vagueConcept, setVagueConcept, onGenerate, isLoading }:
     }
   };
 
+  const handleGenerateClick = () => {
+    if (vagueConcept.trim() && !isLoading) {
+      onGenerate(vagueConcept);
+    }
+  };
+
   const handleGenerateIdea = async () => {
-    setIsLoading(true);
-    setError(null);
-    
     // Check if the user can generate a plan
     if (!canGeneratePlan) {
       setShowQuotaModal(true);
-      setIsLoading(false);
       return;
     }
     
     try {
-      const result = await generateIdea();
-      
-      if (result) {
-        // Increment counter only on success
-        await incrementPlansGenerated();
-        setGeneratedIdea(result);
-      }
+      // Increment counter only on success
+      await incrementPlansGenerated();
     } catch (err) {
-      setError('Failed to generate idea. Please try again.');
+      setErrorMessage('Failed to generate idea. Please try again.');
       console.error(err);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const quotaDisplay = (
-    <div className="text-sm text-gray-600 mt-2">
-      {remainingPlans > 0 ? (
-        <p>{remainingPlans} plan generations remaining this month</p>
-      ) : (
-        <p className="text-amber-600">Plan limit reached for this month</p>
-      )}
-    </div>
-  );
+  const handleKeywordClick = (keyword: string) => {
+    setVagueConcept(keyword);
+  };
+
+  // Replace with empty JSX if needed
+  const quotaDisplay = <></>;
 
   return (
     <>
@@ -109,8 +102,8 @@ function IdeaGenerator({ vagueConcept, setVagueConcept, onGenerate, isLoading }:
             disabled={isLoading}
           />
           <button
-            onClick={handleGenerateIdea}
-            disabled={!vagueConcept.trim() || isLoading}
+            onClick={handleGenerateClick}
+            disabled={isLoading || !vagueConcept.trim()}
             className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             {isLoading ? (
@@ -122,26 +115,7 @@ function IdeaGenerator({ vagueConcept, setVagueConcept, onGenerate, isLoading }:
           </button>
         </div>
 
-        {!isLoadingKeywords && trendingKeywords.length > 0 && (
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-gray-600">Trending Keywords</p>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {trendingKeywords.map((keyword, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    setVagueConcept(keyword);
-                    onGenerate(keyword);
-                  }}
-                  disabled={isLoading}
-                  className="px-3 py-1.5 bg-white text-indigo-600 rounded-full text-sm font-medium border border-indigo-200 hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {keyword}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        <TrendingKeywords onKeywordClick={handleKeywordClick} />
 
         {successMessage && (
           <div className="mt-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
@@ -152,6 +126,15 @@ function IdeaGenerator({ vagueConcept, setVagueConcept, onGenerate, isLoading }:
         {errorMessage && (
           <div className="mt-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
             {errorMessage}
+          </div>
+        )}
+
+        {user && (
+          <div className="text-center mt-2 mb-4">
+            <div className="inline-flex items-center bg-indigo-50 px-3 py-1 rounded-full text-sm text-indigo-700">
+              <Sparkles className="h-4 w-4 mr-1.5" />
+              <span>{remainingPlans} of {subscription.plansLimit} plan generations remaining</span>
+            </div>
           </div>
         )}
 

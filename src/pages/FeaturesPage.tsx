@@ -44,13 +44,15 @@ const FeaturesPage: React.FC = () => {
       <div className="flex-grow">
         {/* Hero Section */}
         <div className="bg-indigo-600 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">
-              Platform Features
-            </h1>
-            <p className="text-xl text-indigo-100 max-w-3xl">
-              Discover how our AI-powered platform helps transform your ideas into successful startups
-            </p>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+            <div className="text-center mt-10">
+              <h2 className="text-3xl font-bold text-white sm:text-4xl">
+                Powerful Features to Build Your Startup
+              </h2>
+              <p className="mt-4 text-lg text-white max-w-2xl mx-auto">
+                Everything you need to validate your ideas and turn them into successful businesses.
+              </p>
+            </div>
           </div>
         </div>
 

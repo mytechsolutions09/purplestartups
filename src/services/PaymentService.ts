@@ -1,40 +1,48 @@
-// This is a mock payment service that would be replaced with a real payment processor like Stripe
+// This is a mock payment service that would be replaced with a real payment processor like Stripe or PayPal
 export interface PaymentRequest {
   userId: string;
   planType: string;
   amount: number;
   currency: string;
+  paymentMethod?: 'card' | 'paypal'; // Add payment method option
 }
 
 export interface PaymentResult {
   success: boolean;
   transactionId?: string;
   errorMessage?: string;
+  redirectUrl?: string; // For PayPal redirect flow
 }
 
 export class PaymentService {
   // In a real app, this would connect to Stripe, PayPal, etc.
   static async processPayment(request: PaymentRequest): Promise<PaymentResult> {
-    // For demo purposes, we'll simulate a successful payment
-    // In production, this would make an API call to your payment processor
-    
     try {
-      // Simulate API call with a delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      console.log('Processing payment:', request);
       
-      // Simulate successful payment 90% of the time
-      const isSuccessful = Math.random() < 0.9;
-      
-      if (isSuccessful) {
+      // Simulate a successful payment (would be real API call)
+      if (request.paymentMethod === 'paypal') {
+        // For PayPal, you would normally return a redirect URL to complete payment
         return {
           success: true,
-          transactionId: `tx_${Math.random().toString(36).substring(2, 15)}`
+          redirectUrl: 'https://www.paypal.com/checkoutnow?token=EXAMPLE_TOKEN',
+          transactionId: `ppid_${Math.random().toString(36).substring(2, 15)}`
         };
       } else {
-        return {
-          success: false,
-          errorMessage: 'Payment processing failed. Please try again or use a different payment method.'
-        };
+        // Default card payment (existing flow)
+        const success = Math.random() > 0.1; // 90% success rate for test
+        
+        if (success) {
+          return {
+            success: true,
+            transactionId: `tx_${Math.random().toString(36).substring(2, 15)}`
+          };
+        } else {
+          return {
+            success: false,
+            errorMessage: 'Payment processing failed. Please try again or use a different payment method.'
+          };
+        }
       }
     } catch (error) {
       return {

@@ -1,11 +1,12 @@
 [build]
-  command = "node netlify-build-fix.js"
+  command = "npm run build"
   publish = "dist"
+  ignore_nvm = true   # Added to ignore .nvmrc
 
 # Environment variables
 [build.environment]
-  NODE_VERSION = "16"
-  NPM_VERSION = "8"
+  NODE_VERSION = "18"
+  NPM_VERSION = "9"
   PYTHON_VERSION = "3.9"
   # Add your actual API keys in the Netlify UI, not here for security reasons
   # VITE_OPENAI_API_KEY = "your_api_key_here"
@@ -24,6 +25,7 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Cache-Control = "public, max-age=0, must-revalidate"
 
 # Set proper headers for JavaScript modules
 [[headers]]

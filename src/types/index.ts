@@ -36,16 +36,22 @@ export interface StartupPlan {
 export interface SavedPlan {
   id: string;
   idea: string;
-  overview: string;
-  problemStatement: string;
-  targetMarket: {
-    demographics: string[];
-    psychographics: string[];
-    marketSize: string;
-  };
-  valueProposition: string;
-  steps: StartupStep[];
   timestamp: number;
+  plan_data?: {
+    plan?: any;
+    marketMetrics?: any;
+    competitors?: any;
+    riskAssessment?: any;
+    researchData?: any;
+    marketingStrategy?: any;
+  };
+  plan?: any;
+  marketMetrics?: any;
+  competitors?: any;
+  riskAssessment?: any;
+  researchData?: any;
+  marketingStrategy?: any;
+  userId?: string;
 }
 
 export interface Risk {
