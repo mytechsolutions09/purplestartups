@@ -1,7 +1,8 @@
 [build]
-  command = "git submodule update --init --depth=1 && npm ci && npm run build"
+  command = "git submodule update --init --depth=1 && npm ci && node netlify-build.js"
   publish = "dist"
-  ignore_nvm = true   # Added to ignore .nvmrc
+  # Make sure we use .nvmrc version
+  ignore_nvm = false  
 
 # Environment variables
 [build.environment]
