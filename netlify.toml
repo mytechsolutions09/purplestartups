@@ -1,5 +1,5 @@
 [build]
-  command = "git submodule update --init --recursive && npm run build"
+  command = "git submodule update --init --depth=1 && npm ci && npm run build"
   publish = "dist"
   ignore_nvm = true   # Added to ignore .nvmrc
 
@@ -12,6 +12,9 @@
   # Add your actual API keys in the Netlify UI, not here for security reasons
   # VITE_OPENAI_API_KEY = "your_api_key_here"
   GIT_LFS_ENABLED = "true"
+  # Speed up the build
+  CI = "true"
+  NPM_CONFIG_PRODUCTION = "false"
 
 [build.processing]
   skip_processing = false

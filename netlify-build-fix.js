@@ -72,21 +72,12 @@ if (typeof window === 'undefined' && !global.crypto) {
   };
 }
 
-// Main execution
+// Only fix UUID imports, don't run npm commands
 try {
   ensureUuidUtilExists();
   fixUuidImports();
-  
-  // Install dependencies
-  console.log('Installing dependencies...');
-  execSync('npm ci', { stdio: 'inherit' });
-  
-  // Build the application
-  console.log('Building application...');
-  execSync('npm run build', { stdio: 'inherit' });
-  
-  console.log('Build completed successfully!');
+  console.log('UUID fixes applied successfully!');
 } catch (error) {
-  console.error('Error during build process:', error);
-  process.exit(1);
+  console.error('Error during UUID fix process:', error);
+  // Don't exit with error - let the build continue
 } 
