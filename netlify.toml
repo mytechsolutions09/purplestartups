@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "git submodule update --init --recursive && npm run build"
   publish = "dist"
   ignore_nvm = true   # Added to ignore .nvmrc
 
@@ -17,10 +17,10 @@
 
 # This is the key part for submodules
 [[plugins]]
-  package = "@netlify/plugin-gatsby"
+  package = "@netlify/plugin-git-submodules"
 
   [plugins.inputs]
-    # Enable submodule fetching (works for non-Gatsby sites too)
+    # Enable submodule fetching
     submodules = true
 
 # Redirects for SPA
