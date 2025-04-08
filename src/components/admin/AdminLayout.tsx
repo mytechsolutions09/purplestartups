@@ -11,6 +11,7 @@ import {
   Menu, 
   X, 
   Search,
+  ChevronDown,
   Shield
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -112,59 +113,62 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   }
   
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Mobile sidebar overlay */}
-      <div className={`fixed inset-0 z-40 md:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)}></div>
-      </div>
-      
-      {/* Sidebar (mobile and desktop) */}
-      <div className={`fixed inset-y-0 left-0 z-40 w-64 transition duration-300 transform bg-white border-r border-gray-200 
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static md:inset-0`}>
+    <div className="min-h-screen bg-gray-100">
+      {/* Mobile sidebar */}
+      <div className={`fixed inset-0 z-40 flex md:hidden ${sidebarOpen ? 'visible' : 'invisible'}`}>
+        {/* Overlay */}
+        <div 
+          className={`fixed inset-0 bg-gray-600 bg-opacity-75 transition-opacity duration-300 ease-linear ${
+            sidebarOpen ? 'opacity-100' : 'opacity-0'
+          }`} 
+          onClick={() => setSidebarOpen(false)}
+        />
         
-        {/* Close button (mobile only) */}
-        <div className="absolute top-0 right-0 -mr-12 pt-2 md:hidden">
-          {sidebarOpen && (
+        {/* Sidebar */}
+        <div 
+          className={`relative flex flex-col w-full max-w-xs pt-5 pb-4 bg-white transition duration-300 ease-in-out transform ${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <div className="absolute top-0 right-0 -mr-12 pt-2">
             <button 
-              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-white"
+              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-6 w-6 text-white" />
             </button>
-          )}
-        </div>
-        
-        {/* Logo */}
-        <div className="flex items-center justify-center h-16 border-b border-gray-200">
-          <Link to="/admin" className="flex items-center">
-            <Logo asLink={false} />
-          </Link>
-        </div>
-        
-        {/* Navigation */}
-        <div className="flex flex-col flex-1 overflow-y-auto">
-          <nav className="flex-1 px-2 py-4 space-y-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center px-4 py-3 text-sm font-medium rounded-md ${
-                  location.pathname === item.path 
-                    ? 'bg-indigo-50 text-indigo-600' 
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                {item.icon}
-                <span className="ml-3">{item.title}</span>
-              </Link>
-            ))}
-          </nav>
+          </div>
           
-          {/* Logout button */}
+          <div className="flex-shrink-0 flex items-center px-4">
+            <Link to="/admin" className="flex items-center">
+              <Logo className="h-8 w-auto" />
+              <span className="ml-2 text-xl font-bold text-indigo-600">Admin</span>
+            </Link>
+          </div>
+          
+          <div className="mt-5 flex-1 overflow-y-auto">
+            <nav className="px-2 space-y-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center px-4 py-3 text-base font-medium rounded-md ${
+                    location.pathname === item.path 
+                      ? 'bg-indigo-50 text-indigo-600' 
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  {item.icon}
+                  <span className="ml-3">{item.title}</span>
+                </Link>
+              ))}
+            </nav>
+          </div>
+          
           <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
             <button 
               onClick={handleLogout}
-              className="flex items-center text-red-600 hover:text-red-800 w-full"
+              className="flex items-center text-red-600 hover:text-red-800"
             >
               <LogOut className="w-5 h-5 mr-3" />
               <span>Logout</span>
@@ -173,11 +177,52 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </div>
       </div>
       
-      {/* Main content area */}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Top navbar */}
-        <div className="sticky top-0 z-10 flex-shrink-0 h-16 bg-white border-b border-gray-200 flex items-center">
-          {/* Mobile menu button */}
+      {/* Desktop sidebar */}
+      <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
+        <div className="flex-1 flex flex-col min-h-0 bg-white border-r border-gray-200">
+          <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
+            <div className="flex items-center flex-shrink-0 px-4">
+              <Link to="/admin" className="flex items-center">
+                <Logo className="h-8 w-auto" />
+                <span className="ml-2 text-xl font-bold text-indigo-600">Admin</span>
+              </Link>
+            </div>
+            
+            <div className="mt-8 flex-1">
+              <nav className="px-2 space-y-1">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-md ${
+                      location.pathname === item.path 
+                        ? 'bg-indigo-50 text-indigo-600' 
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    {item.icon}
+                    <span className="ml-3">{item.title}</span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          </div>
+          
+          <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
+            <button 
+              onClick={handleLogout}
+              className="flex items-center text-red-600 hover:text-red-800"
+            >
+              <LogOut className="w-5 h-5 mr-3" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Main content */}
+      <div className="md:pl-64 flex flex-col flex-1">
+        <div className="sticky top-0 z-10 flex-shrink-0 h-16 bg-white border-b border-gray-200 flex">
           <button
             className="px-4 border-r border-gray-200 text-gray-500 md:hidden"
             onClick={() => setSidebarOpen(true)}
@@ -193,7 +238,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                     <Search className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     placeholder="Search"
                     type="search"
                   />
@@ -207,14 +252,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 <Bell className="h-6 w-6" />
               </button>
               
-              {/* Profile */}
+              {/* Profile dropdown */}
               <div className="ml-3 relative">
                 <div className="flex items-center">
-                  <img
-                    className="h-8 w-8 rounded-full"
-                    src={`https://ui-avatars.com/api/?name=${user?.email?.split('@')[0]}&background=6366F1&color=fff`}
-                    alt="User avatar"
-                  />
+                  <button className="max-w-xs bg-gray-800 rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    <img
+                      className="h-8 w-8 rounded-full"
+                      src={`https://ui-avatars.com/api/?name=${user?.email?.split('@')[0]}&background=6366F1&color=fff`}
+                      alt="User avatar"
+                    />
+                  </button>
                   <span className="ml-3 text-sm font-medium text-gray-700 hidden md:block">
                     {user?.email}
                   </span>
@@ -224,9 +271,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           </div>
         </div>
         
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-gray-100 p-6">
-          {children}
+        <main className="flex-1 overflow-y-auto bg-gray-100">
+          <div className="py-6">
+            {children}
+          </div>
         </main>
       </div>
     </div>

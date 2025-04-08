@@ -4,54 +4,30 @@ import { Link, useNavigate } from 'react-router-dom';
 interface LogoProps {
   className?: string;
   resetAppState?: () => void;
-  asLink?: boolean;
-  linkTo?: string;
 }
 
-const Logo: React.FC<LogoProps> = ({ 
-  className = '',
-  resetAppState,
-  asLink = true,
-  linkTo = '/'
-}) => {
+const Logo: React.FC<LogoProps> = ({ className = "", resetAppState }) => {
   const navigate = useNavigate();
   
-  const handleClick = () => {
+  const handleLogoClick = (e: React.MouseEvent) => {
     if (resetAppState) {
+      e.preventDefault();
       resetAppState();
-    }
-    
-    if (!asLink) {
-      navigate(linkTo);
+      navigate('/');
     }
   };
   
-  const logoContent = (
-    <div className="logo-container flex items-center">
-      <span className="text-[#7B00FF] font-bold text-xl">PURPLE</span>
-      <span className="text-[#FF0185] font-bold text-xl ml-2">STARTUPS</span>
-    </div>
-  );
-  
-  if (asLink) {
-    return (
-      <Link 
-        to={linkTo}
-        className={`${className}`}
-        onClick={resetAppState}
-      >
-        {logoContent}
-      </Link>
-    );
-  }
-  
   return (
-    <div 
-      className={`cursor-pointer ${className}`}
-      onClick={handleClick}
+    <Link 
+      to="/" 
+      className={`flex items-center ${className} cursor-pointer`}
+      onClick={handleLogoClick}
     >
-      {logoContent}
-    </div>
+      <div className="logo-container flex items-center">
+        <span className="text-[#7B00FF] font-bold text-xl">PURPLE</span>
+        <span className="text-[#FF0185] font-bold text-xl ml-2">STARTUPS</span>
+      </div>
+    </Link>
   );
 };
 

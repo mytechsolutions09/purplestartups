@@ -63,7 +63,6 @@ const BillingPage: React.FC = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [billingInfo, setBillingInfo] = useState<any>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal'>('card');
 
   const pricingPlans: PricingPlan[] = [
     {
@@ -249,15 +248,13 @@ const BillingPage: React.FC = () => {
 
   const handleChangePlan = async (planId: 'free' | 'pro' | 'enterprise') => {
     setIsChangingPlan(true);
-    setError(null);
-    
     try {
       let success = false;
       
       if (planId === 'pro') {
-        success = await upgradeToPro(paymentMethod);
+        success = await upgradeToPro();
       } else if (planId === 'enterprise') {
-        success = await upgradeToEnterprise(paymentMethod);
+        success = await upgradeToEnterprise();
       }
       
       if (!success) {
@@ -393,36 +390,6 @@ const BillingPage: React.FC = () => {
     }
   };
 
-  const handleUpgrade = async (planId: string) => {
-    setIsChangingPlan(true);
-    setError(null);
-    
-    try {
-      // Call the appropriate upgrade function based on the plan ID
-      let result: any; // Using any temporarily to fix the type error
-      if (planId === 'pro') {
-        result = await upgradeToPro(paymentMethod);
-      } else if (planId === 'enterprise') {
-        result = await upgradeToEnterprise(paymentMethod);
-      } else {
-        throw new Error(`Unknown plan ID: ${planId}`);
-      }
-      
-      if (result && typeof result === 'object' && result.redirectUrl) {
-        // For PayPal, redirect to complete payment
-        window.location.href = result.redirectUrl;
-        return;
-      }
-      
-      // Handle success/error as before
-      // ... existing code ...
-    } catch (error) {
-      // ... existing error handling ...
-    } finally {
-      setIsChangingPlan(false);
-    }
-  };
-
   if (authLoading || isLoading) {
     return (
       <div className="flex items-center justify-center p-10">
@@ -539,7 +506,7 @@ const BillingPage: React.FC = () => {
                 )}
                 
                 <p className="mt-2 text-sm text-gray-600">
-                  Plan limit: {currentPlan.planLimit || currentPlan.planLimit} roadmaps per month
+                  Plan limit: {currentPlan.planLimit} roadmaps per month
                 </p>
                 
                 <p className="mt-2 text-sm text-gray-600">
@@ -715,37 +682,6 @@ const BillingPage: React.FC = () => {
           </div>
         </div>
         
-        {/* Payment method selection */}
-        <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
-          <h3 className="text-lg font-medium mb-4">Payment Method</h3>
-          
-          <div className="flex space-x-4">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                name="paymentMethod"
-                value="card"
-                checked={paymentMethod === 'card'}
-                onChange={() => setPaymentMethod('card')}
-                className="h-4 w-4 text-indigo-600"
-              />
-              <span>Credit/Debit Card</span>
-            </label>
-            
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                name="paymentMethod"
-                value="paypal"
-                checked={paymentMethod === 'paypal'}
-                onChange={() => setPaymentMethod('paypal')}
-                className="h-4 w-4 text-indigo-600"
-              />
-              <span>PayPal</span>
-            </label>
-          </div>
-        </div>
-        
         {/* Billing History */}
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
@@ -917,9 +853,7 @@ const BillingPage: React.FC = () => {
                         {isChangingPlan ? (
                           <Loader className="animate-spin h-4 w-4 mr-2" />
                         ) : null}
-                        {plan.id === 'free' ? 'Downgrade' : 
-                          (subscription?.plan === 'free' as any) ? 'Upgrade' : 
-                          plan.id === 'enterprise' ? 'Upgrade' : 'Downgrade'}
+                        {plan.id === 'free' ? 'Downgrade' : subscription?.plan === 'free' ? 'Upgrade' : plan.id === 'enterprise' ? 'Upgrade' : 'Downgrade'}
                       </button>
                     )}
                   </div>

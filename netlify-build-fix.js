@@ -15,10 +15,9 @@ try {
 }
 
 // Write clean version files with proper UTF-8 encoding
-fs.writeFileSync('.nvmrc', '18.19.0\n', {encoding: 'utf8'});
-fs.writeFileSync('.node-version', '18.19.0\n', {encoding: 'utf8'});
-fs.writeFileSync('.python-version', '3.9.0\n', {encoding: 'utf8'});
-fs.writeFileSync('runtime.txt', '3.9.0\n', {encoding: 'utf8'});
+fs.writeFileSync('.nvmrc', '16\n', {encoding: 'utf8'});
+fs.writeFileSync('.node-version', '16\n', {encoding: 'utf8'});
+fs.writeFileSync('.python-version', '3.9\n', {encoding: 'utf8'});
 console.log('Created fresh version files with UTF-8 encoding');
 
 // Function to ensure utils/uuid.ts exists
@@ -65,20 +64,21 @@ function fixUuidImports() {
   }
 }
 
-// Fix for crypto getRandomValues on Netlify
-if (typeof window === 'undefined' && !global.crypto) {
-  const crypto = require('crypto');
-  global.crypto = {
-    getRandomValues: (arr) => crypto.randomFillSync(arr)
-  };
-}
-
-// Only fix UUID imports, don't run npm commands
+// Main execution
 try {
   ensureUuidUtilExists();
   fixUuidImports();
-  console.log('UUID fixes applied successfully!');
+  
+  // Install dependencies
+  console.log('Installing dependencies...');
+  execSync('npm ci', { stdio: 'inherit' });
+  
+  // Build the application
+  console.log('Building application...');
+  execSync('npm run build', { stdio: 'inherit' });
+  
+  console.log('Build completed successfully!');
 } catch (error) {
-  console.error('Error during UUID fix process:', error);
-  // Don't exit with error - let the build continue
+  console.error('Error during build process:', error);
+  process.exit(1);
 } 

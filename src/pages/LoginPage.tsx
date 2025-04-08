@@ -64,9 +64,13 @@ const LoginPage: React.FC = () => {
               ? "Don't have an account? "
               : "Already have an account? "}
             <button
-              onClick={() => setAuthMode(
-                authMode === AuthMode.SIGN_IN ? AuthMode.SIGN_UP : AuthMode.SIGN_IN
-              )}
+              onClick={() => {
+                if (authMode === AuthMode.SIGN_IN) {
+                  navigate('/signup');
+                } else {
+                  setAuthMode(AuthMode.SIGN_IN);
+                }
+              }}
               className="font-medium text-indigo-600 hover:text-indigo-500"
             >
               {authMode === AuthMode.SIGN_IN ? 'Sign up' : 'Sign in'}

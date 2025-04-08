@@ -6,8 +6,8 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   isAdmin: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshUserRole: () => Promise<void>;
   loading: boolean;
@@ -113,9 +113,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setError(null);
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      if (error) setError(error.message);
+      return { error };
     } catch (error: any) {
       setError(error.message);
+      return { error };
     }
   };
 
@@ -123,9 +125,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setError(null);
       const { error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
+      if (error) setError(error.message);
+      return { error };
     } catch (error: any) {
       setError(error.message);
+      return { error };
     }
   };
 

@@ -35,10 +35,9 @@ interface SubscriptionContextType {
   subscription: SubscriptionState;
   incrementPlansGenerated: () => Promise<boolean>; // Returns true if within quota
   canGeneratePlan: boolean;
-  upgradeToPro: (paymentMethod?: 'card' | 'paypal') => Promise<boolean>;
-  upgradeToEnterprise: (paymentMethod?: 'card' | 'paypal') => Promise<boolean>;
+  upgradeToPro: () => Promise<boolean>;
+  upgradeToEnterprise: () => Promise<boolean>;
   remainingPlans: number;
-  completePayPalUpgrade: (paymentId: string, payerId: string) => Promise<boolean>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
@@ -212,31 +211,19 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const upgradeToPro = async (paymentMethod: 'card' | 'paypal' = 'card'): Promise<boolean> => {
+  const upgradeToPro = async (): Promise<boolean> => {
     if (!user) return false;
     
     try {
-      const paymentService = new PaymentService();
+      // Process payment first
       const paymentResult = await PaymentService.processPayment({
         userId: user.id,
         planType: PLAN_TYPES.PRO,
-        amount: 1999, // $19.99
-        currency: 'USD',
-        paymentMethod: paymentMethod
+        amount: 9.99,
+        currency: 'USD'
       });
       
-      if (paymentResult.redirectUrl) {
-        // For PayPal, we need to redirect and handle the success callback
-        // Store the intent to upgrade in localStorage or your backend
-        localStorage.setItem('pendingUpgrade', JSON.stringify({
-          userId: user.id,
-          plan: PLAN_TYPES.PRO,
-          timestamp: Date.now()
-        }));
-        
-        return true; // The redirect will happen in the component
-      }
-      
+      // Only update the subscription if payment was successful
       if (paymentResult.success) {
         console.log('Upgrading to Pro plan...');
         const { error } = await supabase
@@ -285,31 +272,19 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const upgradeToEnterprise = async (paymentMethod: 'card' | 'paypal' = 'card'): Promise<boolean> => {
+  const upgradeToEnterprise = async (): Promise<boolean> => {
     if (!user) return false;
     
     try {
-      const paymentService = new PaymentService();
+      // Process payment first
       const paymentResult = await PaymentService.processPayment({
         userId: user.id,
         planType: PLAN_TYPES.ENTERPRISE,
-        amount: 2999, // $29.99
-        currency: 'USD',
-        paymentMethod: paymentMethod
+        amount: 29.99,
+        currency: 'USD'
       });
       
-      if (paymentResult.redirectUrl) {
-        // For PayPal, we need to redirect and handle the success callback
-        // Store the intent to upgrade in localStorage or your backend
-        localStorage.setItem('pendingUpgrade', JSON.stringify({
-          userId: user.id,
-          plan: PLAN_TYPES.ENTERPRISE,
-          timestamp: Date.now()
-        }));
-        
-        return true; // The redirect will happen in the component
-      }
-      
+      // Only update the subscription if payment was successful
       if (paymentResult.success) {
         console.log('Upgrading to Enterprise plan...');
         
@@ -380,30 +355,6 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const canGeneratePlan = subscription.plansGenerated < subscription.plansLimit;
   const remainingPlans = subscription.plansLimit - subscription.plansGenerated;
 
-  const completePayPalUpgrade = async (paymentId: string, payerId: string): Promise<boolean> => {
-    // This would verify the PayPal payment with your backend
-    // For now we'll simulate success
-    
-    const pendingUpgrade = localStorage.getItem('pendingUpgrade');
-    if (!pendingUpgrade) return false;
-    
-    const upgradeData = JSON.parse(pendingUpgrade);
-    
-    // Update the subscription in your backend
-    // ... code to update subscription ...
-    
-    // Clear the pending upgrade
-    localStorage.removeItem('pendingUpgrade');
-    
-    // Update the local state
-    setSubscription({
-      ...subscription,
-      plan: upgradeData.plan
-    });
-    
-    return true;
-  };
-
   return (
     <SubscriptionContext.Provider value={{ 
       subscription,
@@ -411,8 +362,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       canGeneratePlan,
       upgradeToPro,
       upgradeToEnterprise,
-      remainingPlans,
-      completePayPalUpgrade
+      remainingPlans
     }}>
       {children}
     </SubscriptionContext.Provider>
