@@ -14,7 +14,8 @@ import {
   ChevronRight,
   Download,
   AlertTriangle,
-  Shield
+  Shield,
+  UserIcon
 } from 'lucide-react';
 
 interface User {
@@ -26,7 +27,7 @@ interface User {
   avatar_url: string | null;
   subscription_status: string;
   created_at: string;
-  last_sign_in_at: string | null;
+  last_sign_in_at?: string | null;
 }
 
 interface EditUserFormData {
@@ -63,22 +64,11 @@ const UserManagementPage: React.FC = () => {
   // Fetch users from Supabase
   useEffect(() => {
     const fetchUsers = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        
         const { data, error } = await supabase
           .from('user_profiles')
-          .select(`
-            id,
-            user_id,
-            full_name,
-            email,
-            role,
-            avatar_url,
-            subscription_status,
-            created_at,
-            last_sign_in_at
-          `)
+          .select('user_id, full_name, email, role, avatar_url, subscription_status, created_at')
           .order('created_at', { ascending: false });
         
         if (error) throw error;
@@ -183,13 +173,13 @@ const UserManagementPage: React.FC = () => {
           role: editFormData.role,
           subscription_status: editFormData.subscription_status
         })
-        .eq('id', userToEdit.id);
+        .eq('user_id', userToEdit.user_id);
       
       if (error) throw error;
       
       // Update local state
       setUsers(users.map(user => 
-        user.id === userToEdit.id 
+        user.user_id === userToEdit.user_id 
           ? { ...user, ...editFormData } 
           : user
       ));
@@ -222,12 +212,12 @@ const UserManagementPage: React.FC = () => {
       const { error } = await supabase
         .from('user_profiles')
         .delete()
-        .eq('id', userToDelete.id);
+        .eq('user_id', userToDelete.user_id);
       
       if (error) throw error;
       
       // Update local state
-      setUsers(users.filter(user => user.id !== userToDelete.id));
+      setUsers(users.filter(user => user.user_id !== userToDelete.user_id));
       setSuccessMessage('User deleted successfully');
       setTimeout(() => setSuccessMessage(''), 3000);
       setShowDeleteModal(false);
@@ -244,7 +234,7 @@ const UserManagementPage: React.FC = () => {
   const exportToCSV = () => {
     const headers = ['ID', 'Name', 'Email', 'Role', 'Subscription', 'Created At', 'Last Login'];
     const csvData = filteredUsers.map(user => [
-      user.id,
+      user.user_id,
       user.full_name || 'No name',
       user.email,
       user.role || 'user',
@@ -426,23 +416,21 @@ const UserManagementPage: React.FC = () => {
                   </tr>
                 ) : (
                   getCurrentUsers().map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
+                    <tr key={user.user_id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <img 
-                              className="h-10 w-10 rounded-full" 
-                              src={user.avatar_url || `https://ui-avatars.com/api/?name=${user.full_name || user.email.split('@')[0]}&background=6366F1&color=fff`}
-                              alt={user.full_name || 'User'} 
-                            />
+                          <div className="h-10 w-10 flex-shrink-0">
+                            {user.avatar_url ? (
+                              <img className="h-10 w-10 rounded-full" src={user.avatar_url} alt="" />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                <UserIcon className="h-6 w-6 text-gray-500" />
+                              </div>
+                            )}
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {user.full_name || 'No name'}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {user.email}
-                            </div>
+                            <div className="text-sm font-medium text-gray-900">{user.full_name || 'Unnamed User'}</div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
                           </div>
                         </div>
                       </td>
@@ -460,7 +448,7 @@ const UserManagementPage: React.FC = () => {
                         {formatDate(user.created_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(user.last_sign_in_at)}
+                        {user.last_sign_in_at ? formatDate(user.last_sign_in_at) : 'Never'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">

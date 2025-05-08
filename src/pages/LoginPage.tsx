@@ -35,15 +35,18 @@ const LoginPage: React.FC = () => {
     
     try {
       if (authMode === AuthMode.SIGN_IN) {
-        const { error } = await signIn(email, password);
-        if (error) throw error;
-        // Redirect to profile page on successful login
-        navigate('/profile');
+        const result = await signIn(email, password);
+        if (result && result.error) {
+          setError(result.error.message || 'Failed to sign in. Please check your credentials.');
+        }
       } else {
-        const { error } = await signUp(email, password);
-        if (error) throw error;
-        setAuthMode(AuthMode.SIGN_IN);
-        setSuccess('Account created! Please check your email to verify your account.');
+        const result = await signUp(email, password);
+        if (result && result.error) {
+          setError(result.error.message || 'Failed to create account.');
+        } else {
+          setAuthMode(AuthMode.SIGN_IN);
+          setSuccess('Account created! Please check your email to verify your account.');
+        }
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during authentication.');
@@ -64,13 +67,9 @@ const LoginPage: React.FC = () => {
               ? "Don't have an account? "
               : "Already have an account? "}
             <button
-              onClick={() => {
-                if (authMode === AuthMode.SIGN_IN) {
-                  navigate('/signup');
-                } else {
-                  setAuthMode(AuthMode.SIGN_IN);
-                }
-              }}
+              onClick={() => setAuthMode(
+                authMode === AuthMode.SIGN_IN ? AuthMode.SIGN_UP : AuthMode.SIGN_IN
+              )}
               className="font-medium text-indigo-600 hover:text-indigo-500"
             >
               {authMode === AuthMode.SIGN_IN ? 'Sign up' : 'Sign in'}

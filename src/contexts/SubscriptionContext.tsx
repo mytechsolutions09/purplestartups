@@ -29,15 +29,19 @@ interface SubscriptionState {
   plansLimit: number;
   nextReset: Date | null;
   isLoading: boolean;
+  paymentMethod?: 'card' | 'paypal';
+  orderId?: string;
 }
 
 interface SubscriptionContextType {
   subscription: SubscriptionState;
   incrementPlansGenerated: () => Promise<boolean>; // Returns true if within quota
   canGeneratePlan: boolean;
-  upgradeToPro: () => Promise<boolean>;
-  upgradeToEnterprise: () => Promise<boolean>;
+  upgradeToPro: (paymentMethod?: 'card' | 'paypal') => Promise<boolean>;
+  upgradeToEnterprise: (paymentMethod?: 'card' | 'paypal') => Promise<boolean>;
   remainingPlans: number;
+  completePayPalUpgrade: (paymentId: string, payerId: string) => Promise<boolean>;
+  processPayPalPayment: (orderId: string, planType: string) => Promise<boolean>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
@@ -211,80 +215,93 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const upgradeToPro = async (): Promise<boolean> => {
-    if (!user) return false;
-    
+  const upgradeToPro = async () => {
     try {
-      // Process payment first
-      const paymentResult = await PaymentService.processPayment({
-        userId: user.id,
-        planType: PLAN_TYPES.PRO,
-        amount: 9.99,
-        currency: 'USD'
+      setSubscription(prev => ({ ...prev, isLoading: true }));
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      // Create a new broadcast channel for this operation
+      // This ensures we're not using a closed channel
+      const subscriptionChannel = createBroadcastChannel('subscription-update');
+      
+      // Call your API to upgrade the plan
+      const response = await fetch('/api/subscriptions/upgrade-to-pro', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
       });
       
-      // Only update the subscription if payment was successful
-      if (paymentResult.success) {
-        console.log('Upgrading to Pro plan...');
-        const { error } = await supabase
-          .from('user_subscriptions')
-          .update({
-            plan: PLAN_TYPES.PRO,
-            plans_limit: PLAN_LIMITS[PLAN_TYPES.PRO]
-          })
-          .eq('user_id', user.id);
-          
-        if (error) throw error;
-        
-        // Verify the update was successful
-        const { data: updatedData, error: verifyError } = await supabase
-          .from('user_subscriptions')
-          .select('plan')
-          .eq('user_id', user.id)
-          .single();
-          
-        if (verifyError) throw verifyError;
-        
-        console.log('Database plan updated to:', updatedData?.plan);
-        
-        setSubscription(prev => ({
-          ...prev,
-          plan: PLAN_TYPES.PRO,
-          plansLimit: PLAN_LIMITS[PLAN_TYPES.PRO]
-        }));
-        
-        // Broadcast the subscription change
-        subscriptionChannel.postMessage({
-          type: 'SUBSCRIPTION_UPDATED',
-          userId: user.id,
-          plan: PLAN_TYPES.PRO
-        });
-        
-        return true;
-      } else {
-        // Payment failed - show error
-        console.error('Payment failed:', paymentResult.errorMessage);
-        return false;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to upgrade subscription');
       }
-    } catch (err) {
-      console.error('Error upgrading to pro:', err);
-      return false;
+      
+      // Update local state
+      setSubscription(prev => ({
+        ...prev,
+        plan: PLAN_TYPES.PRO,
+        plansLimit: PLAN_LIMITS[PLAN_TYPES.PRO]
+      }));
+      
+      // Notify other tabs about the subscription change
+      try {
+        subscriptionChannel.postMessage({
+          type: 'subscription-updated',
+          plan: PLAN_TYPES.PRO,
+        });
+      } catch (channelError) {
+        console.warn('Failed to broadcast subscription update:', channelError);
+        // Continue execution even if broadcast fails
+      }
+      
+      // Close the channel after message is sent
+      setTimeout(() => {
+        try {
+          subscriptionChannel.close();
+        } catch (closeError) {
+          console.warn('Error closing broadcast channel:', closeError);
+        }
+      }, 100);
+      
+      return true;
+    } catch (error) {
+      console.error('Error upgrading to pro:', error);
+      throw error;
+    } finally {
+      setSubscription(prev => ({ ...prev, isLoading: false }));
     }
   };
 
-  const upgradeToEnterprise = async (): Promise<boolean> => {
+  const upgradeToEnterprise = async (paymentMethod: 'card' | 'paypal' = 'card'): Promise<boolean> => {
     if (!user) return false;
     
     try {
-      // Process payment first
+      const paymentService = new PaymentService();
       const paymentResult = await PaymentService.processPayment({
         userId: user.id,
         planType: PLAN_TYPES.ENTERPRISE,
-        amount: 29.99,
-        currency: 'USD'
+        amount: 2999, // $29.99
+        currency: 'USD',
+        paymentMethod: paymentMethod
       });
       
-      // Only update the subscription if payment was successful
+      if (paymentResult.redirectUrl) {
+        // For PayPal, we need to redirect and handle the success callback
+        // Store the intent to upgrade in localStorage or your backend
+        localStorage.setItem('pendingUpgrade', JSON.stringify({
+          userId: user.id,
+          plan: PLAN_TYPES.ENTERPRISE,
+          timestamp: Date.now()
+        }));
+        
+        return true; // The redirect will happen in the component
+      }
+      
       if (paymentResult.success) {
         console.log('Upgrading to Enterprise plan...');
         
@@ -355,6 +372,103 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const canGeneratePlan = subscription.plansGenerated < subscription.plansLimit;
   const remainingPlans = subscription.plansLimit - subscription.plansGenerated;
 
+  const completePayPalUpgrade = async (paymentId: string, payerId: string): Promise<boolean> => {
+    // This would verify the PayPal payment with your backend
+    // For now we'll simulate success
+    
+    const pendingUpgrade = localStorage.getItem('pendingUpgrade');
+    if (!pendingUpgrade) return false;
+    
+    const upgradeData = JSON.parse(pendingUpgrade);
+    
+    // Update the subscription in your backend
+    // ... code to update subscription ...
+    
+    // Clear the pending upgrade
+    localStorage.removeItem('pendingUpgrade');
+    
+    // Update the local state
+    setSubscription({
+      ...subscription,
+      plan: upgradeData.plan
+    });
+    
+    return true;
+  };
+
+  // Add this function to process PayPal payments
+  const processPayPalPayment = async (orderId: string, planType: string): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      // Create a new broadcast channel for this operation
+      const subscriptionChannel = createBroadcastChannel('subscription-update');
+      
+      // Call your backend to verify and record the payment
+      const response = await fetch('/api/subscriptions/record-paypal-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          planType,
+          orderId
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to record payment');
+      }
+      
+      // Update the subscription plan in the database
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .update({
+          plan: planType,
+          plans_limit: PLAN_LIMITS[planType],
+          payment_method: 'paypal',
+          order_id: orderId
+        })
+        .eq('user_id', user.id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setSubscription(prev => ({
+        ...prev,
+        plan: planType,
+        plansLimit: PLAN_LIMITS[planType],
+        paymentMethod: 'paypal'
+      }));
+      
+      // Notify other tabs about the subscription change
+      try {
+        subscriptionChannel.postMessage({
+          type: 'subscription-updated',
+          plan: planType,
+        });
+      } catch (channelError) {
+        console.warn('Failed to broadcast subscription update:', channelError);
+      }
+      
+      // Close the channel after message is sent
+      setTimeout(() => {
+        try {
+          subscriptionChannel.close();
+        } catch (closeError) {
+          console.warn('Error closing broadcast channel:', closeError);
+        }
+      }, 100);
+      
+      return true;
+    } catch (error) {
+      console.error('Error processing PayPal payment:', error);
+      return false;
+    }
+  };
+
   return (
     <SubscriptionContext.Provider value={{ 
       subscription,
@@ -362,7 +476,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       canGeneratePlan,
       upgradeToPro,
       upgradeToEnterprise,
-      remainingPlans
+      remainingPlans,
+      completePayPalUpgrade,
+      processPayPalPayment
     }}>
       {children}
     </SubscriptionContext.Provider>

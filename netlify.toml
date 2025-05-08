@@ -1,15 +1,27 @@
 [build]
-  command = "npm run build"
+  command = "git submodule update --init --depth=1 && npm ci && node netlify-build.js"
   publish = "dist"
-  ignore_nvm = true   # Added to ignore .nvmrc
+  # Make sure we use .nvmrc version
+  ignore_nvm = false  
+  functions = "netlify/functions"
 
 # Environment variables
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "18.19.0"  # Specify a specific version that works with Vite
   NPM_VERSION = "9"
-  PYTHON_VERSION = "3.9"
+  PYTHON_VERSION = "3.9.0"  # Be specific with the Python version
+  NODE_OPTIONS = "--max-old-space-size=4096"  # Give Node more memory for the build
   # Add your actual API keys in the Netlify UI, not here for security reasons
   # VITE_OPENAI_API_KEY = "your_api_key_here"
+  GIT_LFS_ENABLED = "true"
+  # Speed up the build
+  CI = "true"
+  NPM_CONFIG_PRODUCTION = "false"
+  PAYPAL_CLIENT_ID = "BAAKPgMTI1YOvn3gmyWn1PT2OasgEcXHRCtEOTa7TwLnl5nyKK7PTd5D-ex-Ul7fWqyr4VTbd6l99cCrc4"
+  # Add PAYPAL_CLIENT_SECRET through Netlify dashboard environment variables for security
+
+[build.processing]
+  skip_processing = false
 
 # Redirects for SPA
 [[redirects]]
@@ -37,3 +49,18 @@
   for = "/*.css"
   [headers.values]
     Content-Type = "text/css"
+
+[functions]
+  directory = "netlify/functions"
+  
+[[redirects]]
+  from = "/api/subscription/cancel"
+  to = "/.netlify/functions/cancel-subscription"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true

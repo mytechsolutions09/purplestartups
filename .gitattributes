@@ -1,2 +1,20 @@
+# Set default behavior to automatically normalize line endings
 * text=auto
-*.sh text eol=lf 
+
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout
+*.js text
+*.jsx text
+*.ts text
+*.tsx text
+*.json text
+*.css text
+*.scss text
+*.html text
+*.md text
+*.yml text
+*.yaml text
+*.toml text
+
+# Denote all files that should keep their LF (Unix) line endings
+.gitmodules text eol=lf 

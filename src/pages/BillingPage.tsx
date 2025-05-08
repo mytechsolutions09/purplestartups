@@ -4,6 +4,8 @@ import { Navigate } from 'react-router-dom';
 import { CreditCard, DollarSign, Clock, Plus, Loader, AlertTriangle, CheckCircle, XCircle, Zap, Star, Building } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
 import { useSubscription, PLAN_TYPES } from '../contexts/SubscriptionContext';
+import PayPalButton from '../components/PayPalButton';
+import { loadPayPalSDK } from '../utils/scriptLoader';
 
 interface PaymentMethod {
   id: string;
@@ -20,6 +22,8 @@ interface BillingHistory {
   amount: number;
   status: 'paid' | 'pending' | 'failed';
   invoice_url?: string;
+  order_id?: string;
+  plan?: string;
 }
 
 interface Subscription {
@@ -36,15 +40,18 @@ interface PlanFeature {
 }
 
 interface PricingPlan {
-  id: 'free' | 'pro' | 'enterprise';
+  id: string;
   name: string;
   description: string;
   monthlyPrice: number;
   annualPrice: number;
   annualSavings: number;
-  features: PlanFeature[];
+  planLimit: number;
   icon: React.ReactNode;
+  features: PlanFeature[];
 }
+
+const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 
 const BillingPage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
@@ -56,13 +63,14 @@ const BillingPage: React.FC = () => {
   } = useSubscription();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [billingHistory, setBillingHistory] = useState<BillingHistory[]>([]);
-  const [isAddingPayment, setIsAddingPayment] = useState(false);
   const [isChangingPlan, setIsChangingPlan] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [billingInfo, setBillingInfo] = useState<any>(null);
+  const [showPayPalButtons, setShowPayPalButtons] = useState<{[key: string]: boolean}>({});
+  const [paypalSDKLoaded, setPayPalSDKLoaded] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const pricingPlans: PricingPlan[] = [
     {
@@ -85,39 +93,38 @@ const BillingPage: React.FC = () => {
         { name: 'Custom Business Plans', included: false },
         { name: 'Financial Projections', included: false },
         { name: 'Priority Support', included: false }
-      ]
+      ],
+      planLimit: 2
     },
     {
       id: 'pro',
       name: 'Pro',
       description: 'Ideal for growing businesses and teams',
       monthlyPrice: 19.99,
-      annualPrice: 16.67,
-      annualSavings: 39.89,
-      icon: <Star className="h-6 w-6 text-indigo-500" />,
+      annualPrice: 19.99,
+      annualSavings: 39.96,
+      icon: <Star className="h-6 w-6 text-indigo-600" />,
       features: [
         { name: 'Everything in Basic, plus:', included: true },
         { name: 'Advanced AI Analysis', included: true },
         { name: 'Custom Business Plans', included: true },
         { name: 'Financial Projections', included: true },
         { name: 'Priority Support', included: true },
-        { name: 'All Apps Included*coming soon*', included: true },
+        { name: 'All Apps Included', included: true },
         { name: '2 Team Members', included: true },
         { name: '10 Projects', included: true },
-        { name: 'Dedicated Account Manager', included: false },
-        
-        { name: 'Dedicated Account Manager', included: false },
-        
-      ]
+        { name: 'Custom Branding', included: true }
+      ],
+      planLimit: 10
     },
     {
       id: 'enterprise',
       name: 'Enterprise',
       description: 'For large organizations and agencies',
       monthlyPrice: 49.99,
-      annualPrice: 41.67,
-      annualSavings: 99.89,
-      icon: <Building className="h-6 w-6 text-purple-500" />,
+      annualPrice: 49.99,
+      annualSavings: 99.96,
+      icon: <Building className="h-6 w-6 text-indigo-600" />,
       features: [
         { name: 'Everything in Pro, plus:', included: true },
         { name: '50 Projects', included: true },
@@ -129,22 +136,14 @@ const BillingPage: React.FC = () => {
         { name: 'White Label Options', included: true },
         { name: 'Custom Integrations', included: true },
         { name: 'Training Sessions', included: true }
-      ]
+      ],
+      planLimit: 50
     }
   ];
 
   useEffect(() => {
     if (user) {
-      // Initialize with demo data
-      setPaymentMethods([{
-        id: 'pm_123456789',
-        last4: '4242',
-        brand: 'Visa',
-        exp_month: 12,
-        exp_year: 2024,
-        isDefault: true
-      }]);
-      
+      // Initialize without the mock credit card data
       setBillingHistory([
         {
           id: 'in_1234',
@@ -169,57 +168,133 @@ const BillingPage: React.FC = () => {
     }
   }, [user]);
 
-  const handleAddPaymentMethod = () => {
-    setIsAddingPayment(true);
-    // This would typically open a Stripe Elements or similar payment form
-    // For demo purposes, we'll just simulate it
-    setTimeout(() => {
-      setPaymentMethods([
-        ...paymentMethods,
-        {
-          id: 'pm_new' + Date.now(),
-          last4: '5678',
-          brand: 'Mastercard',
-          exp_month: 11,
-          exp_year: 2025,
-          isDefault: false
-        }
-      ]);
-      setIsAddingPayment(false);
-    }, 2000);
-  };
+  useEffect(() => {
+    // First check if PayPal SDK is already loaded
+    if (window.paypal) {
+      setPayPalSDKLoaded(true);
+      return;
+    }
+    
+    // If not loaded yet, try to load it
+    loadPayPalSDK()
+      .then(() => {
+        console.log('PayPal SDK loaded successfully');
+        setPayPalSDKLoaded(true);
+      })
+      .catch(error => {
+        console.error('Failed to load PayPal SDK:', error);
+        setError('Could not load payment processor. Please try again later.');
+      });
+  }, []);
 
-  const handleSetDefaultPayment = (id: string) => {
-    setPaymentMethods(
-      paymentMethods.map(method => ({
-        ...method,
-        isDefault: method.id === id
-      }))
-    );
-  };
-
-  const handleRemovePaymentMethod = (id: string) => {
-    setPaymentMethods(
-      paymentMethods.filter(method => method.id !== id)
-    );
-  };
+  useEffect(() => {
+    if (error) {
+      // Clear error after 5 seconds
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleCancelSubscription = async () => {
-    setIsChangingPlan(true);
+    if (!user) return;
+    
+    setShowCancelConfirm(false);
+    
     try {
-      // Call the API to cancel subscription
-      const { error } = await supabase
-        .from('user_subscriptions')
-        .update({ cancel_at_period_end: true })
-        .eq('user_id', user?.id);
-        
-      if (error) throw error;
+      setIsChangingPlan(true);
       
-      // Refetch billing info
-      fetchBillingInfo();
-    } catch (err) {
-      console.error('Error canceling subscription:', err);
-      setError('Failed to cancel subscription. Please try again.');
+      // If in development, use the mock implementation
+      if (IS_DEVELOPMENT) {
+        console.log("DEVELOPMENT MODE: Using mock subscription cancellation");
+        
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Show success message
+        setError(null);
+        setSuccessMessage("Your subscription has been canceled successfully.");
+        setIsChangingPlan(false);
+        return;
+      }
+      
+      // PRODUCTION CODE BEGINS HERE
+      console.log("PRODUCTION MODE: Canceling subscription for user:", user.id);
+      
+      // Try multiple endpoints in sequence until one works
+      const endpoints = [
+        '/api/subscription/cancel',
+        '/.netlify/functions/cancel-subscription',
+        `${import.meta.env.VITE_API_URL || ''}/subscription/cancel`
+      ];
+      
+      let response = null;
+      let error = null;
+      
+      // Try each endpoint until one works
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`Attempting to cancel subscription using endpoint: ${endpoint}`);
+          
+          response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              userId: user.id,
+              subscriptionId: subscription?.id || '' 
+            }),
+          });
+          
+          console.log(`Response from ${endpoint}:`, response.status);
+          
+          if (response.ok) {
+            console.log(`Successfully canceled subscription using ${endpoint}`);
+            break; // Exit the loop if successful
+          }
+        } catch (err) {
+          console.error(`Error with endpoint ${endpoint}:`, err);
+          error = err;
+        }
+      }
+      
+      // If we've tried all endpoints and none worked
+      if (!response || !response.ok) {
+        throw new Error(error || `Failed to cancel subscription: All endpoints failed`);
+      }
+      
+      // Handle successful response
+      let result = { message: 'Subscription canceled successfully' };
+      
+      try {
+        const responseText = await response.text();
+        if (responseText) {
+          result = JSON.parse(responseText);
+        }
+      } catch (jsonError) {
+        console.warn('Could not parse JSON response, using default message');
+      }
+      
+      // Show success message
+      setError(null);
+      setSuccessMessage(result.message || "Your subscription has been canceled successfully.");
+      
+      // Update subscription context
+      if (typeof refreshSubscription === 'function') {
+        try {
+          await refreshSubscription();
+          console.log('Subscription data refreshed');
+        } catch (refreshError) {
+          console.error('Failed to refresh subscription data:', refreshError);
+        }
+      }
+    } catch (error) {
+      console.error('Error canceling subscription:', error);
+      setError(error instanceof Error ? error.message : 
+        "Failed to cancel subscription. Please try again or contact support.");
     } finally {
       setIsChangingPlan(false);
     }
@@ -246,27 +321,51 @@ const BillingPage: React.FC = () => {
     }
   };
 
-  const handleChangePlan = async (planId: 'free' | 'pro' | 'enterprise') => {
+  const handlePayWithPayPal = async (planId: string) => {
     setIsChangingPlan(true);
+    setError(null);
+    
     try {
-      let success = false;
+      // Call the appropriate upgrade function based on the plan
+      const upgradeFunction = planId === 'pro' ? upgradeToPro : upgradeToEnterprise;
+      const result = await upgradeFunction('paypal');
       
-      if (planId === 'pro') {
-        success = await upgradeToPro();
-      } else if (planId === 'enterprise') {
-        success = await upgradeToEnterprise();
+      // If there's a redirect URL from PayPal, redirect to it
+      if (result && window.location.href.includes('redirectUrl')) {
+        window.location.href = window.location.href.split('redirectUrl=')[1];
+      } else {
+        // Handle the regular flow (for example, showing a success message)
+        // This is just temporary until we have the full PayPal integration
+        setIsChangingPlan(false);
+      }
+    } catch (error) {
+      console.error('Error processing PayPal payment:', error);
+      setError('Failed to process payment. Please try again.');
+      setIsChangingPlan(false);
+    }
+  };
+
+  const handleChangePlan = async (planId: string) => {
+    try {
+      setIsChangingPlan(true);
+      
+      console.log("BillingPage: Initiating plan change to", planId);
+      
+      // If user is already on this plan, show message and return
+      if (subscription.plan === planId) {
+        console.log(`BillingPage: Already on ${planId} plan, no change needed`);
+        setError(`You are already on the ${planId} plan.`);
+        setIsChangingPlan(false);
+        return;
       }
       
-      if (!success) {
-        throw new Error('Failed to upgrade plan');
-      }
+      // Show PayPal buttons for this plan
+      setShowPayPalButtons({ [planId]: true });
+      setIsChangingPlan(false);
       
-      // Refetch billing info
-      fetchBillingInfo();
-    } catch (err) {
-      console.error('Error changing plan:', err);
-      setError('Failed to change plan. Please try again.');
-    } finally {
+    } catch (error) {
+      console.error("Error changing plan:", error);
+      setError("Failed to upgrade plan. Please try again later.");
       setIsChangingPlan(false);
     }
   };
@@ -375,18 +474,243 @@ const BillingPage: React.FC = () => {
   }, [subscription, user]);
 
   const fetchBillingInfo = async () => {
-    // Fetch billing details from DB
+    if (!user) return;
+    
     try {
-      const { data, error } = await supabase
+      setIsLoading(true);
+      
+      // Correct way to query user_subscriptions
+      const { data: subscriptionData, error: subscriptionError } = await supabase
+        .from('user_subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle(); // Use maybeSingle instead of single to avoid errors
+      
+      if (subscriptionError) {
+        console.error('Error fetching subscription:', subscriptionError);
+      } else if (subscriptionData) {
+        setBillingInfo(subscriptionData);
+      }
+      
+      // Correct way to query billing_info with proper headers
+      const { data: billingData, error: billingError } = await supabase
         .from('billing_info')
         .select('*')
-        .eq('user_id', user?.id)
-        .single();
-        
-      if (error && error.code !== 'PGRST116') throw error;
-      setBillingInfo(data || null);
+        .eq('user_id', user.id);
+      
+      if (billingError) {
+        console.error('Error fetching billing info:', billingError);
+      }
+      
+      // Fetch billing history
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (paymentsError) {
+        console.error('Error fetching payment history:', paymentsError);
+      } else {
+        setBillingHistory(paymentsData || []);
+      }
+      
     } catch (err) {
-      console.error('Error fetching billing info:', err);
+      console.error('Error loading billing data:', err);
+      setError('Failed to load billing data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Add this useEffect to handle return from PayPal
+  useEffect(() => {
+    // Check if the URL contains PayPal success parameters
+    const params = new URLSearchParams(window.location.search);
+    const paymentId = params.get('paymentId');
+    const payerId = params.get('PayerID');
+    
+    if (paymentId && payerId) {
+      const completePayment = async () => {
+        setIsLoading(true);
+        try {
+          // Call your API to complete the payment
+          // This would be implemented in your SubscriptionContext
+          await completePayPalUpgrade(paymentId, payerId);
+          
+          // Clear the URL parameters after processing
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          // Show success message
+          // You can add a success message UI component here
+        } catch (error) {
+          console.error('Error completing PayPal payment:', error);
+          setError('Failed to complete payment. Please contact support.');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      completePayment();
+    }
+  }, []);
+
+  // Add this function to handle PayPal payment success
+  const handlePayPalSuccess = async (details: any, planId: string) => {
+    try {
+      setIsChangingPlan(true);
+      
+      // Call your backend to verify and process the payment
+      const response = await fetch('/api/subscriptions/verify-paypal-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+          planId,
+          paymentDetails: details,
+          orderId: details.id
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to verify payment');
+      }
+      
+      // If verification was successful, upgrade the plan
+      if (planId === 'pro') {
+        await upgradeToPro();
+      } else if (planId === 'enterprise') {
+        await upgradeToEnterprise();
+      }
+      
+      // Refetch billing info
+      fetchBillingInfo();
+      setError(null);
+      setSuccessMessage(`Successfully upgraded to ${planId.charAt(0).toUpperCase() + planId.slice(1)} plan!`);
+      
+      // Hide PayPal buttons
+      setShowPayPalButtons({});
+      
+    } catch (error) {
+      console.error("Error processing PayPal payment:", error);
+      setError("Failed to process payment. Please try again.");
+    } finally {
+      setIsChangingPlan(false);
+    }
+  };
+
+  // Update your fetchBillingData function to get real PayPal transaction history
+  const fetchBillingData = async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      
+      // Fetch real transaction history from Supabase
+      const { data: payments, error } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching billing history:', error);
+        setError('Failed to load billing history');
+        return;
+      }
+      
+      // Transform payment data to match BillingHistory interface
+      const billingData = payments ? payments.map(payment => ({
+        id: payment.id,
+        date: payment.created_at,
+        amount: payment.amount,
+        status: payment.status as 'paid' | 'pending' | 'failed',
+        invoice_url: payment.invoice_url,
+        order_id: payment.order_id,
+        plan: payment.plan
+      })) : [];
+      
+      setBillingHistory(billingData);
+      
+      // Also fetch subscription info
+      const { data: subscriptionData, error: subscriptionError } = await supabase
+        .from('user_subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!subscriptionError && subscriptionData) {
+        setBillingInfo(subscriptionData);
+      }
+    } catch (err) {
+      console.error('Error loading billing data:', err);
+      setError('Failed to load billing data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMockPayment = async (planId: string) => {
+    try {
+      setIsChangingPlan(true);
+      
+      // Get the proper amount based on plan
+      const amount = planId === 'pro' ? 19.99 : planId === 'enterprise' ? 49.99 : 0;
+      
+      // Create mock payment details
+      const mockPaymentDetails = {
+        id: `MOCK-${Date.now()}`,
+        status: 'COMPLETED',
+        payer: {
+          email_address: user?.email || 'test@example.com',
+          payer_id: `MOCK-PAYER-${user?.id || '123'}`
+        },
+        purchase_units: [{
+          amount: {
+            value: amount.toFixed(2), // Ensure proper decimal formatting
+            currency_code: 'USD'
+          }
+        }],
+        create_time: new Date().toISOString(),
+        update_time: new Date().toISOString()
+      };
+      
+      // Call the same success handler you'd call with PayPal
+      await handlePayPalSuccess(mockPaymentDetails, planId);
+      
+      // Show success message
+      alert('Mock payment successful! This is just for testing.');
+    } catch (error) {
+      console.error('Mock payment error:', error);
+      setError('An error occurred with the mock payment.');
+    } finally {
+      setIsChangingPlan(false);
+      setShowPayPalButtons({});
+    }
+  };
+
+  // Add this function to handle PayPal upgrades
+  const completePayPalUpgrade = async (paymentId: string, payerId: string) => {
+    try {
+      const response = await fetch('/api/complete-paypal-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ paymentId, payerId, userId: user?.id }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to complete payment');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error completing PayPal payment:', error);
+      throw error;
     }
   };
 
@@ -423,24 +747,24 @@ const BillingPage: React.FC = () => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+  const formatCurrency = (amount: number): string => {
+    // Always format as dollars with 2 decimal places
+    // Don't try to guess if it's in cents or dollars based on value
+    return `$${amount.toFixed(2)}`;
   };
 
   const getNextBillingDate = () => {
-    if (!subscription || !subscription.current_period_end) {
+    if (!subscription || !subscription.nextReset) {
       return 'N/A';
     }
     
-    return formatDate(subscription.current_period_end);
+    // Convert Date to string before passing to formatDate
+    return formatDate(subscription.nextReset.toString());
   };
 
   const nextBillingDate = getNextBillingDate();
 
-  const currentPrice = subscription?.billing_cycle === 'annually'
+  const currentPrice = subscription?.plan === PLAN_TYPES.ANNUALLY
     ? currentPlan?.annualPrice
     : currentPlan?.monthlyPrice;
 
@@ -450,9 +774,11 @@ const BillingPage: React.FC = () => {
       
       <div className="space-y-6">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start">
-            <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0" />
-            <span>{error}</span>
+          <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+            <div className="flex">
+              <AlertTriangle className="h-5 w-5 text-red-400 mr-2" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
           </div>
         )}
         
@@ -506,7 +832,7 @@ const BillingPage: React.FC = () => {
                 )}
                 
                 <p className="mt-2 text-sm text-gray-600">
-                  Plan limit: {currentPlan.planLimit} roadmaps per month
+                  Plan limit: {currentPlan?.planLimit || 0} roadmaps per month
                 </p>
                 
                 <p className="mt-2 text-sm text-gray-600">
@@ -600,88 +926,6 @@ const BillingPage: React.FC = () => {
           </div>
         </div>
         
-        {/* Payment Methods */}
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
-              <CreditCard className="h-5 w-5 text-indigo-500 mr-2" />
-              Payment Methods
-            </h3>
-          </div>
-          
-          <div className="px-4 py-5 sm:p-6">
-            {paymentMethods.length === 0 ? (
-              <div className="text-center py-6">
-                <CreditCard className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No payment methods</h3>
-                <p className="mt-1 text-sm text-gray-500">Add a payment method to manage your subscription.</p>
-              </div>
-            ) : (
-              <ul className="divide-y divide-gray-200">
-                {paymentMethods.map((method) => (
-                  <li key={method.id} className="py-4 flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="mr-4">
-                        {method.brand === 'Visa' ? (
-                          <div className="w-10 h-6 bg-blue-600 rounded text-white flex items-center justify-center text-xs font-bold">VISA</div>
-                        ) : method.brand === 'Mastercard' ? (
-                          <div className="w-10 h-6 bg-red-600 rounded text-white flex items-center justify-center text-xs font-bold">MC</div>
-                        ) : (
-                          <div className="w-10 h-6 bg-gray-200 rounded flex items-center justify-center text-xs font-bold text-gray-600">{method.brand.substring(0, 4).toUpperCase()}</div>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {method.brand} ending in {method.last4}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Expires {method.exp_month}/{method.exp_year}
-                          {method.isDefault && ' (Default)'}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex space-x-2">
-                      {!method.isDefault && (
-                        <button
-                          type="button"
-                          onClick={() => handleSetDefaultPayment(method.id)}
-                          className="text-xs text-indigo-600 hover:text-indigo-500"
-                        >
-                          Set as default
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleRemovePaymentMethod(method.id)}
-                        className="text-xs text-red-600 hover:text-red-500"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-            
-            <div className="mt-6">
-              <button
-                type="button"
-                onClick={handleAddPaymentMethod}
-                disabled={isAddingPayment}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                {isAddingPayment ? (
-                  <Loader className="animate-spin h-4 w-4 mr-2" />
-                ) : (
-                  <Plus className="h-4 w-4 mr-2" />
-                )}
-                Add Payment Method
-              </button>
-            </div>
-          </div>
-        </div>
-        
         {/* Billing History */}
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
@@ -696,50 +940,57 @@ const BillingPage: React.FC = () => {
               <div className="text-center py-6">
                 <Clock className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No billing history</h3>
-                <p className="mt-1 text-sm text-gray-500">Your billing history will appear here when you make a payment.</p>
+                <p className="mt-1 text-sm text-gray-500">Your payment history will appear here after your first payment.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Invoice
-                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {billingHistory.map((invoice) => (
-                      <tr key={invoice.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatDate(invoice.date)}
+                    {billingHistory.map((item) => (
+                      <tr key={item.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(item.date).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatCurrency(invoice.amount)}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          Subscription payment {item.plan ? `(${item.plan})` : ''}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                          {formatCurrency(item.amount)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-                            invoice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            item.status === 'paid' ? 'bg-green-100 text-green-800' : 
+                            item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
                             'bg-red-100 text-red-800'
                           }`}>
-                            {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                          {invoice.invoice_url && (
-                            <a href={invoice.invoice_url} className="text-indigo-600 hover:text-indigo-500">
-                              Download
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {item.order_id ? item.order_id.substring(0, 8) + '...' : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {item.invoice_url ? (
+                            <a 
+                              href={item.invoice_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-indigo-600 hover:text-indigo-900"
+                            >
+                              View Receipt
                             </a>
+                          ) : (
+                            '-'
                           )}
                         </td>
                       </tr>
@@ -830,31 +1081,65 @@ const BillingPage: React.FC = () => {
                   </ul>
                   
                   <div className="mt-6">
-                    {subscription?.plan === plan.id ? (
-                      <button
-                        type="button"
-                        disabled
-                        className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-300 cursor-not-allowed"
-                      >
-                        Current Plan
-                      </button>
+                    {showPayPalButtons[plan.id] && paypalSDKLoaded ? (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Complete payment with PayPal:</h4>
+                        <PayPalButton
+                          planId={plan.id}
+                          amount={plan.id === 'pro' ? 1999 : plan.id === 'enterprise' ? 4999 : 0}
+                          onSuccess={(details) => handlePayPalSuccess(details, plan.id)}
+                          onError={(error) => {
+                            console.error("PayPal error:", error);
+                            setError("PayPal payment failed. Please try again.");
+                            setShowPayPalButtons({});
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPayPalButtons({})}
+                          className="w-full mt-2 inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : showPayPalButtons[plan.id] ? (
+                      <div className="mt-4 text-center">
+                        <p className="text-sm text-gray-600">Loading payment options...</p>
+                        <div className="mt-2 inline-flex items-center px-4 py-2">
+                          <svg className="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        </div>
+                      </div>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleChangePlan(plan.id);
-                          const plansModal = document.getElementById('change-plan-modal');
-                          if (plansModal) {
-                            plansModal.classList.add('hidden');
-                          }
-                        }}
-                        className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
-                      >
-                        {isChangingPlan ? (
-                          <Loader className="animate-spin h-4 w-4 mr-2" />
-                        ) : null}
-                        {plan.id === 'free' ? 'Downgrade' : subscription?.plan === 'free' ? 'Upgrade' : plan.id === 'enterprise' ? 'Upgrade' : 'Downgrade'}
-                      </button>
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Complete payment:</h4>
+                        {/* Mock Payment Button (only in development) */}
+                        {process.env.NODE_ENV !== 'production' && (
+                          <button
+                            type="button"
+                            onClick={() => handleMockPayment(plan.id)}
+                            className="w-full mt-2 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none"
+                          >
+                            Development: Mock Payment
+                          </button>
+                        )}
+                        
+                        <button
+                          type="button"
+                          onClick={() => handleChangePlan(plan.id)}
+                          className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
+                          disabled={isChangingPlan || subscription.plan === plan.id}
+                        >
+                          {isChangingPlan ? (
+                            <Loader className="animate-spin h-4 w-4 mr-2" />
+                          ) : null}
+                          {plan.id === 'free' ? 'Downgrade' : 
+                            (subscription.plan === 'free' as any) ? 'Upgrade' : 
+                            plan.id === 'enterprise' ? 'Upgrade' : 'Downgrade'}
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

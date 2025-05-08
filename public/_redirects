@@ -1,0 +1,2 @@
+/api/subscription/cancel /.netlify/functions/cancel-subscription 200
+/api/* /.netlify/functions/:splat 200 

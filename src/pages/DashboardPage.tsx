@@ -86,12 +86,6 @@ const DashboardPage: React.FC = () => {
       icon: <CreditCard />
     },
     {
-      title: 'API Access',
-      description: 'Get API keys and manage integrations',
-      to: '/dashboard/api',
-      icon: <Key />
-    },
-    {
       title: 'Profile Picture',
       description: 'Upload or change your profile picture',
       to: '/dashboard/avatar',
